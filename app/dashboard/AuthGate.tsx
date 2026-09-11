@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import type { User } from "@supabase/supabase-js";
+import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
@@ -32,7 +32,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
     void checkSession();
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       if (!mounted) return;
       if (!session?.user) {
         const next = pathname || "/dashboard";
