@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import type { ReactNode } from "react";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: {
@@ -24,3 +26,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
+
+export default function DeveloperLayout({ children }: { children: ReactNode }) {
+  return (
+    <div className="min-w-0 space-y-4 sm:space-y-6">
+      <div className="mx-auto max-w-6xl min-w-0 space-y-3 px-0 sm:px-1">
+        <div className="flex sm:justify-end">
+          <Link href="/status" className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-indigo-700/50 bg-indigo-950/30 px-4 py-2.5 text-center text-sm font-medium text-indigo-200 transition-colors hover:bg-indigo-900/40 sm:w-auto">View submission status & timeline</Link>
+        </div>
+        <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-4 sm:px-5">
+          <h2 className="font-semibold text-amber-200">Manual review and publishing</h2>
+          <p className="mt-1 text-sm leading-relaxed text-amber-100/80">Every Luma Store submission is reviewed manually. Source code, licensing, app details and publishing requirements are checked before approval.</p>
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
