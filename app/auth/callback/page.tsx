@@ -24,7 +24,7 @@ function AuthCallbackContent() {
         if (error) {
           router.push("/login?error=" + encodeURIComponent("Authentication failed."));
         } else {
-          router.push("/dashboard/developer");
+          router.push("/");
         }
       });
     } else {
