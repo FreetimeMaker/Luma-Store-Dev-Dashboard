@@ -31,13 +31,14 @@ export default function HomePage() {
             Submit apps with Fastlane metadata, keep releases consistent, and follow the complete review process from one dedicated developer dashboard.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href="/dashboard" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white transition hover:bg-indigo-500">
-              Open developer dashboard
+            <Link href="/login?next=/dashboard" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white transition hover:bg-indigo-500">
+              Sign in to submit an app
             </Link>
-            <Link href="/login" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-700 bg-slate-950/50 px-6 py-3 font-semibold text-slate-200 transition hover:bg-slate-800">
-              Sign in
+            <Link href="/login?next=/dashboard/status" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-700 bg-slate-950/50 px-6 py-3 font-semibold text-slate-200 transition hover:bg-slate-800">
+              View submission status
             </Link>
           </div>
+          <p className="mt-4 text-sm text-slate-500">A signed-in developer account is required before the submission dashboard can be opened.</p>
         </div>
       </section>
 
@@ -62,10 +63,11 @@ export default function HomePage() {
         <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Submission flow</p>
           <ol className="mt-4 space-y-3 text-sm text-slate-300">
-            <li>1. Prepare Fastlane metadata</li>
-            <li>2. Submit from the dashboard</li>
-            <li>3. Complete developer verification</li>
-            <li>4. Follow the review timeline</li>
+            <li>1. Sign in with your developer account</li>
+            <li>2. Prepare Fastlane metadata</li>
+            <li>3. Submit from the protected dashboard</li>
+            <li>4. Complete developer verification</li>
+            <li>5. Follow the review timeline</li>
           </ol>
         </div>
       </section>
