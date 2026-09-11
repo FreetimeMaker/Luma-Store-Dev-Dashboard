@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+html {
+  max-width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+  background: #020617;
+  color: #f8fafc;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+img, video, svg, input, textarea, select, button { max-width: 100%; }
+p, a, code, pre, span { overflow-wrap: anywhere; }
+
+@media (max-width: 767px) {
+  input, textarea, select { font-size: 16px; }
+  button, a { touch-action: manipulation; }
+}
