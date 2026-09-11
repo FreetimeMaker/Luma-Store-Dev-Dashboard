@@ -24,7 +24,7 @@ function AuthCallbackContent() {
         if (error) {
           router.push("/login?error=" + encodeURIComponent("Authentication failed."));
         } else {
-          router.push("/");
+          router.push("/dashboard");
         }
       });
     } else {
@@ -41,13 +41,7 @@ function AuthCallbackContent() {
 
 export default function AuthCallbackPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[70vh] items-center justify-center text-slate-300">
-          Loading...
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="flex min-h-[70vh] items-center justify-center text-slate-300">Loading...</div>}>
       <AuthCallbackContent />
     </Suspense>
   );

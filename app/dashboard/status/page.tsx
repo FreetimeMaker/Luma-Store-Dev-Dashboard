@@ -89,7 +89,7 @@ export default function DeveloperStatusPage() {
           <h1 className="text-2xl font-bold text-white sm:text-3xl">Submission status</h1>
           <p className="mt-2 text-sm leading-relaxed text-slate-400 sm:text-base">Follow review steps, changelogs, reviewer messages and publication decisions for your apps.</p>
         </div>
-        <Link href="/dashboard/developer" className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-center text-sm font-medium text-slate-200 hover:bg-slate-800 sm:w-auto">Back to Developer Portal</Link>
+        <Link href="/dashboard" className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-center text-sm font-medium text-slate-200 hover:bg-slate-800 sm:w-auto">Back to Developer Dashboard</Link>
       </div>
       {loading && <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 text-center text-slate-400 sm:p-10">Loading submission history…</div>}
       {error && <div className="rounded-xl border border-amber-800/50 bg-amber-950/30 px-4 py-4 text-sm text-amber-200 sm:px-5">{error}</div>}
@@ -112,7 +112,24 @@ export default function DeveloperStatusPage() {
               </div>
               {submission.changelog && <div className="mx-4 mt-4 rounded-lg border border-blue-800/40 bg-blue-950/30 p-4 sm:mx-6 sm:mt-6"><p className="text-xs font-bold uppercase tracking-wider text-blue-300">Update changelog</p><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-300">{submission.changelog}</p></div>}
               {submission.review_message && <div className="mx-4 mt-4 rounded-lg border border-indigo-800/40 bg-indigo-950/30 p-4 sm:mx-6 sm:mt-6"><p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Latest reviewer message</p><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-300">{submission.review_message}</p></div>}
-              <div className="p-4 sm:p-6"><h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-300 sm:mb-5">Timeline</h3><div className="space-y-0">{events.length === 0 ? <p className="text-sm text-slate-500">No timeline entries are available yet.</p> : events.map((event, index) => <div key={event.id} className="relative flex min-w-0 gap-3 pb-6 last:pb-0 sm:gap-4">{index < events.length - 1 && <div className="absolute left-[7px] top-4 h-full w-px bg-slate-700" />}<div className="relative z-10 mt-1 h-4 w-4 shrink-0 rounded-full border-2 border-indigo-400 bg-slate-900" /><div className="min-w-0 flex-1"><div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2"><p className="font-semibold text-white">{event.status}</p><span className="text-xs text-slate-500">{formatDate(event.created_at)}</span></div>{event.review_message && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-slate-400">{event.review_message}</p>}</div></div>)}</div></div>
+              <div className="p-4 sm:p-6">
+                <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-300 sm:mb-5">Timeline</h3>
+                <div className="space-y-0">
+                  {events.length === 0 ? <p className="text-sm text-slate-500">No timeline entries are available yet.</p> : events.map((event, index) => (
+                    <div key={event.id} className="relative flex min-w-0 gap-3 pb-6 last:pb-0 sm:gap-4">
+                      {index < events.length - 1 && <div className="absolute left-[7px] top-4 h-full w-px bg-slate-700" />}
+                      <div className="relative z-10 mt-1 h-4 w-4 shrink-0 rounded-full border-2 border-indigo-400 bg-slate-900" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+                          <p className="font-semibold text-white">{event.status}</p>
+                          <span className="text-xs text-slate-500">{formatDate(event.created_at)}</span>
+                        </div>
+                        {event.review_message && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-slate-400">{event.review_message}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </section>
           );
         })}
