@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { AuthError } from "@supabase/supabase-js";
+import type { AuthError, UserResponse } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
 function safeNext(value: string | null) {
@@ -34,7 +34,7 @@ function AuthCallbackContent() {
         }
       });
     } else {
-      supabase.auth.getUser().then(({ data }) => {
+      supabase.auth.getUser().then(({ data }: UserResponse) => {
         if (data.user) router.replace(next);
         else router.replace(`/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent("No authorization code received.")}`);
       });
