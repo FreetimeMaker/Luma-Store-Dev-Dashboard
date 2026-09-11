@@ -2,6 +2,7 @@
 
 import React, { Suspense, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { UserResponse } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
 function safeNext(value: string | null) {
@@ -15,7 +16,7 @@ function LoginContent() {
   const next = safeNext(searchParams.get("next"));
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: UserResponse) => {
       if (data.user) router.replace(next);
     });
   }, [next, router, supabase]);
