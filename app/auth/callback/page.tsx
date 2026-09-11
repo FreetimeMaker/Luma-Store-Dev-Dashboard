@@ -1,34 +1,43 @@
 "use client";
-import { Suspense, useEffect } from "react";
+
+import { Suspense, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { AuthError } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
+function safeNext(value: string | null) {
+  return value?.startsWith("/dashboard") ? value : "/dashboard";
+}
+
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     const code = searchParams.get("code");
     const error = searchParams.get("error");
     const errorDescription = searchParams.get("error_description");
+    const next = safeNext(searchParams.get("next"));
 
     if (error) {
-      router.push("/login?error=" + encodeURIComponent(errorDescription || error));
+      router.replace(`/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent(errorDescription || error)}`);
       return;
     }
 
     if (code) {
       supabase.auth.exchangeCodeForSession(code).then(({ error }: { error: AuthError | null }) => {
         if (error) {
-          router.push("/login?error=" + encodeURIComponent("Authentication failed."));
+          router.replace(`/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent("Authentication failed.")}`);
         } else {
-          router.push("/dashboard");
+          router.replace(next);
         }
       });
     } else {
-      router.push("/login?error=" + encodeURIComponent("No authorization code received."));
+      supabase.auth.getUser().then(({ data }) => {
+        if (data.user) router.replace(next);
+        else router.replace(`/login?next=${encodeURIComponent(next)}&error=${encodeURIComponent("No authorization code received.")}`);
+      });
     }
   }, [router, searchParams, supabase]);
 
