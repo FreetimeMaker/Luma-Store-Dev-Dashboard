@@ -11,6 +11,7 @@ type AppMetadata = {
   id: string;
   name: string;
   status: SubmissionStatus;
+  closed_source: boolean | null;
   author_name: string | null;
   author_email: string | null;
   author_website: string | null;
@@ -24,16 +25,10 @@ type AppMetadata = {
   opencollective: string | null;
   bitcoin: string | null;
   litecoin: string | null;
-  repo_type: string | null;
-  allowed_apk_signing_keys: unknown;
 };
 
 const fieldClass = "w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20";
 const cardClass = "rounded-2xl border border-slate-800 bg-slate-900/80 shadow-lg shadow-black/10";
-
-function arrayToLines(value: unknown) {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string").join("\n") : "";
-}
 
 function clean(value: string) {
   const trimmed = value.trim();
@@ -49,6 +44,7 @@ export default function AppMetadataPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
+    closed_source: false,
     author_name: "",
     author_email: "",
     author_website: "",
@@ -62,8 +58,6 @@ export default function AppMetadataPage() {
     opencollective: "",
     bitcoin: "",
     litecoin: "",
-    repo_type: "git",
-    allowed_apk_signing_keys: "",
   });
 
   useEffect(() => {
@@ -78,7 +72,7 @@ export default function AppMetadataPage() {
       }
       const { data, error: loadError } = await supabase
         .from("luma_submissions")
-        .select("id,name,status,author_name,author_email,author_website,website_url,source_code_url,issue_tracker_url,translation_url,changelog_url,donate_url,liberapay,opencollective,bitcoin,litecoin,repo_type,allowed_apk_signing_keys")
+        .select("id,name,status,closed_source,author_name,author_email,author_website,website_url,source_code_url,issue_tracker_url,translation_url,changelog_url,donate_url,liberapay,opencollective,bitcoin,litecoin")
         .eq("id", id)
         .eq("user_id", user.id)
         .single();
@@ -90,6 +84,7 @@ export default function AppMetadataPage() {
       const row = data as AppMetadata;
       setApp(row);
       setForm({
+        closed_source: Boolean(row.closed_source),
         author_name: row.author_name || "",
         author_email: row.author_email || "",
         author_website: row.author_website || "",
@@ -103,15 +98,13 @@ export default function AppMetadataPage() {
         opencollective: row.opencollective || "",
         bitcoin: row.bitcoin || "",
         litecoin: row.litecoin || "",
-        repo_type: row.repo_type || "git",
-        allowed_apk_signing_keys: arrayToLines(row.allowed_apk_signing_keys),
       });
       setLoading(false);
     }
     void load();
   }, [id, supabase]);
 
-  function setField(field: keyof typeof form, value: string) {
+  function setField(field: keyof typeof form, value: string | boolean) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -120,19 +113,17 @@ export default function AppMetadataPage() {
     if (!app) return;
     setSaving(true);
     setError(null);
-    const signingKeys = form.allowed_apk_signing_keys
-      .split(/\r?\n/)
-      .map((value) => value.trim())
-      .filter(Boolean);
-    const nextStatus = app.status === "Pending" ? "Pending" : "Pending";
     const { error: updateError } = await supabase
       .from("luma_submissions")
       .update({
+        closed_source: form.closed_source,
         author_name: clean(form.author_name),
         author_email: clean(form.author_email),
         author_website: clean(form.author_website),
         website_url: clean(form.website_url),
-        source_code_url: clean(form.source_code_url),
+        source_code_url: form.closed_source ? null : clean(form.source_code_url),
+        repo_url: form.closed_source ? null : clean(form.source_code_url),
+        license_type: form.closed_source ? "Proprietary" : undefined,
         issue_tracker_url: clean(form.issue_tracker_url),
         translation_url: clean(form.translation_url),
         changelog_url: clean(form.changelog_url),
@@ -141,9 +132,7 @@ export default function AppMetadataPage() {
         opencollective: clean(form.opencollective),
         bitcoin: clean(form.bitcoin),
         litecoin: clean(form.litecoin),
-        repo_type: form.repo_type,
-        allowed_apk_signing_keys: signingKeys,
-        status: nextStatus,
+        status: "Pending",
         status_updated_at: new Date().toISOString(),
       })
       .eq("id", id);
@@ -164,7 +153,7 @@ export default function AppMetadataPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">App metadata</h1>
-          <p className="mt-2 text-slate-400">F-Droid-style metadata for <strong className="text-white">{app.name}</strong>. These values belong to this app, not to your user profile.</p>
+          <p className="mt-2 text-slate-400">Metadata for <strong className="text-white">{app.name}</strong>. These values belong to this app, not to your user profile.</p>
         </div>
         <Link href={`/dashboard/apps/${id}`} className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-slate-800">Back to app</Link>
       </div>
@@ -178,14 +167,21 @@ export default function AppMetadataPage() {
 
       <form onSubmit={save} className={`${cardClass} space-y-8 p-6 md:p-8`}>
         <section>
+          <h2 className="text-lg font-semibold text-white">Source model</h2>
+          <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-700 bg-slate-950/40 p-4">
+            <input type="checkbox" checked={form.closed_source} onChange={(e) => setField("closed_source", e.target.checked)} className="mt-1 h-4 w-4" />
+            <span><span className="block font-medium text-white">Closed-source app</span><span className="mt-1 block text-sm text-slate-400">When enabled, Luma Store does not publish a source-code or repository URL for this app.</span></span>
+          </label>
+        </section>
+
+        <section>
           <h2 className="text-lg font-semibold text-white">Author & project</h2>
           <div className="mt-4 grid gap-5 md:grid-cols-2">
             <div><label className="mb-2 block text-sm text-slate-300">Author name</label><input value={form.author_name} onChange={(e) => setField("author_name", e.target.value)} className={fieldClass} /></div>
             <div><label className="mb-2 block text-sm text-slate-300">Author email</label><input type="email" value={form.author_email} onChange={(e) => setField("author_email", e.target.value)} className={fieldClass} /></div>
             <div><label className="mb-2 block text-sm text-slate-300">Author website</label><input type="url" value={form.author_website} onChange={(e) => setField("author_website", e.target.value)} className={fieldClass} /></div>
             <div><label className="mb-2 block text-sm text-slate-300">App website</label><input type="url" value={form.website_url} onChange={(e) => setField("website_url", e.target.value)} className={fieldClass} /></div>
-            <div className="md:col-span-2"><label className="mb-2 block text-sm text-slate-300">Source code URL</label><input type="url" value={form.source_code_url} onChange={(e) => setField("source_code_url", e.target.value)} className={fieldClass} placeholder="https://github.com/owner/repo" /></div>
-            <div><label className="mb-2 block text-sm text-slate-300">Repository type</label><select value={form.repo_type} onChange={(e) => setField("repo_type", e.target.value)} className={fieldClass}><option value="git">Git</option><option value="svn">SVN</option><option value="git-svn">Git-SVN</option><option value="hg">Mercurial</option><option value="bzr">Bazaar</option><option value="srclib">srclib</option></select></div>
+            {!form.closed_source && <div className="md:col-span-2"><label className="mb-2 block text-sm text-slate-300">Source code URL</label><input type="url" value={form.source_code_url} onChange={(e) => setField("source_code_url", e.target.value)} className={fieldClass} placeholder="https://github.com/owner/repo" /></div>}
           </div>
         </section>
 
@@ -207,13 +203,6 @@ export default function AppMetadataPage() {
             <div><label className="mb-2 block text-sm text-slate-300">Bitcoin address</label><input value={form.bitcoin} onChange={(e) => setField("bitcoin", e.target.value)} className={fieldClass} /></div>
             <div><label className="mb-2 block text-sm text-slate-300">Litecoin address</label><input value={form.litecoin} onChange={(e) => setField("litecoin", e.target.value)} className={fieldClass} /></div>
           </div>
-        </section>
-
-        <section>
-          <h2 className="text-lg font-semibold text-white">APK signing</h2>
-          <label className="mt-4 mb-2 block text-sm text-slate-300">Allowed APK signing key SHA-256 fingerprints</label>
-          <textarea rows={5} value={form.allowed_apk_signing_keys} onChange={(e) => setField("allowed_apk_signing_keys", e.target.value)} className={fieldClass} placeholder="One fingerprint per line" />
-          <p className="mt-2 text-xs text-slate-500">Useful for verifying that uploaded APKs are signed by an expected key.</p>
         </section>
 
         <div className="flex justify-end"><button type="submit" disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2.5 font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40">{saving ? "Saving…" : "Save app metadata"}</button></div>
