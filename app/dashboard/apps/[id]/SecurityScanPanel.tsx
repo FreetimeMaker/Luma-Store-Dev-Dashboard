@@ -81,7 +81,9 @@ export default function SecurityScanPanel({ submissionId, initialScan }: { submi
 
   useEffect(() => {
     setScan(initialScan);
-  }, [initialScan]);
+    void reloadLatest().catch((err) => setError(err instanceof Error ? err.message : "Could not load security scan."));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialScan, submissionId]);
 
   useEffect(() => {
     if (!scan || !["Queued", "Scanning"].includes(scan.status)) return;
