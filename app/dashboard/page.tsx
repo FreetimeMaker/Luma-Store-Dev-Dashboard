@@ -16,6 +16,7 @@ type AppSubmission = {
   submittedAt: string;
   category: string;
   licenseType: string;
+  closedSource: boolean;
   iconUrl: string;
   version: string;
   platform: string;
@@ -48,6 +49,7 @@ type LumaSubmissionRow = {
   submitted_at: string;
   category: string;
   license_type: string | null;
+  closed_source: boolean | null;
   icon_url: string | null;
   version: string | null;
   platform: string | null;
@@ -133,6 +135,7 @@ function rowToApp(item: LumaSubmissionRow): AppSubmission {
     submittedAt: item.submitted_at,
     category: item.category,
     licenseType: item.license_type || "",
+    closedSource: Boolean(item.closed_source),
     iconUrl: item.icon_url || "",
     version: item.version || "",
     platform: item.platform || "Android",
@@ -219,6 +222,7 @@ export default function LumaDeveloperPortal() {
   const [appLink, setAppLink] = useState("");
   const [appCategory, setAppCategory] = useState<string>("System");
   const [appLicenseType, setAppLicenseType] = useState("MIT");
+  const [closedSource, setClosedSource] = useState(false);
   const [appIconUrl, setAppIconUrl] = useState("");
   const [iconPreviewError, setIconPreviewError] = useState(false);
   const [appVersion, setAppVersion] = useState("");
@@ -263,7 +267,7 @@ export default function LumaDeveloperPortal() {
   }, [supabase]);
 
   const resetForm = () => {
-    setStep(1); setAppName(""); setAppLink(""); setAppCategory("System"); setAppLicenseType("MIT"); setAppIconUrl(""); setIconPreviewError(false);
+    setStep(1); setAppName(""); setAppLink(""); setAppCategory("System"); setAppLicenseType("MIT"); setClosedSource(false); setAppIconUrl(""); setIconPreviewError(false);
     setAppVersion(""); setAppDownloadUrl(""); setAppPackageName(""); setAppVersionCode("");
     setWebsiteUrl(""); setIssueTrackerUrl(""); setTranslationUrl(""); setAuthorName(""); setAuthorEmail(""); setAuthorWebsite("");
     setDonateUrl(""); setLiberapay(""); setOpencollective(""); setBitcoin(""); setLitecoin("");
@@ -274,7 +278,7 @@ export default function LumaDeveloperPortal() {
     if (!(["Rejected", "Approved", "Changes Requested"] as SubmissionStatus[]).includes(app.status)) return;
     setEditingId(app.id); setEditingStatus(app.status); setAppName(app.name); setAppLink(app.repoUrl || app.link);
     setAppCategory(FDROID_CATEGORIES.includes(app.category as typeof FDROID_CATEGORIES[number]) ? app.category : "System");
-    setAppLicenseType(app.licenseType || "MIT"); setAppIconUrl(app.iconUrl); setIconPreviewError(false); setAppVersion(app.version);
+    setClosedSource(app.closedSource); setAppLicenseType(app.closedSource ? "MIT" : (app.licenseType || "MIT")); setAppIconUrl(app.iconUrl); setIconPreviewError(false); setAppVersion(app.version);
     setAppDownloadUrl(app.downloadUrl); setAppPackageName(app.packageName); setAppVersionCode(app.versionCode);
     setWebsiteUrl(app.websiteUrl); setIssueTrackerUrl(app.issueTrackerUrl); setTranslationUrl(app.translationUrl);
     setAuthorName(app.authorName); setAuthorEmail(app.authorEmail); setAuthorWebsite(app.authorWebsite);
@@ -303,7 +307,7 @@ export default function LumaDeveloperPortal() {
       if (!user) throw new Error("Not authenticated");
       if (!validAndroidMetadata) throw new Error("Android apps require a valid package name and positive versionCode.");
       if (!FDROID_CATEGORIES.includes(appCategory as typeof FDROID_CATEGORIES[number])) throw new Error("Please select a valid F-Droid category.");
-      if (!appLicenseType) throw new Error("Please select an open-source license.");
+      if (!closedSource && !appLicenseType) throw new Error("Please select an open-source license.");
 
       const currentFastlaneMetadata = await fetchFastlaneMetadata(appLink.trim(), appVersionCode);
       setFastlaneMetadata(currentFastlaneMetadata); setAppName(currentFastlaneMetadata.title);
@@ -313,11 +317,12 @@ export default function LumaDeveloperPortal() {
         short_description: currentFastlaneMetadata.shortDescription,
         description: currentFastlaneMetadata.fullDescription,
         link: appLink.trim(),
-        repo_url: appLink.trim(),
-        source_code_url: appLink.trim(),
+        repo_url: closedSource ? null : appLink.trim(),
+        source_code_url: closedSource ? null : appLink.trim(),
         category: appCategory,
         subcategory: null,
-        license_type: appLicenseType,
+        license_type: closedSource ? "Proprietary" : appLicenseType,
+        closed_source: closedSource,
         icon_url: appIconUrl.trim(),
         version: appVersion.trim(),
         platform: "Android",
@@ -382,7 +387,7 @@ export default function LumaDeveloperPortal() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 pb-20">
-      <header className="border-b border-slate-800 pb-7"><h1 className="text-3xl font-bold text-white"><span className="bg-gradient-to-r from-pink-500 to-indigo-500 bg-clip-text text-transparent">Luma Store</span> Developer Portal</h1><p className="mt-2 max-w-2xl text-slate-400">Submit and maintain open-source Android apps.</p></header>
+      <header className="border-b border-slate-800 pb-7"><h1 className="text-3xl font-bold text-white"><span className="bg-gradient-to-r from-pink-500 to-indigo-500 bg-clip-text text-transparent">Luma Store</span> Developer Portal</h1><p className="mt-2 max-w-2xl text-slate-400">Submit and maintain Android apps, including open-source and closed-source apps.</p></header>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <main className="space-y-8">
@@ -391,9 +396,10 @@ export default function LumaDeveloperPortal() {
             <form onSubmit={handleSubmit} className="p-6 md:p-8">
               {step === 1 && <div className="space-y-6">
                 <div className="rounded-xl border border-indigo-500/20 bg-indigo-950/20 p-4 text-sm text-indigo-200">Fastlane provides title, descriptions, changelog and screenshots. Anti-Features are assigned by reviewers.</div>
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-700 bg-slate-950/40 p-4"><input type="checkbox" checked={closedSource} onChange={(e)=>setClosedSource(e.target.checked)} className="mt-1 h-4 w-4"/><span><span className="block font-medium text-white">Closed-source app</span><span className="mt-1 block text-sm text-slate-400">The source code will not be published by Luma Store. A public GitHub repository is still required only for Fastlane store metadata.</span></span></label>
                 <div className="grid gap-5 md:grid-cols-2">
                   <div><label className="mb-2 block text-sm font-medium text-slate-300">F-Droid Category</label><select value={appCategory} onChange={(e)=>setAppCategory(e.target.value)} className={fieldClass}>{FDROID_CATEGORIES.map((category)=><option key={category}>{category}</option>)}</select></div>
-                  <div><label className="mb-2 block text-sm font-medium text-slate-300">Open-Source License</label><select required value={appLicenseType} onChange={(e)=>setAppLicenseType(e.target.value)} className={fieldClass}>{LICENSE_OPTIONS.map(([value,label])=><option key={value} value={value}>{label} ({value})</option>)}</select></div>
+                  {closedSource?<div><label className="mb-2 block text-sm font-medium text-slate-300">License</label><input value="Proprietary / Closed source" disabled className={`${fieldClass} opacity-70`}/></div>:<div><label className="mb-2 block text-sm font-medium text-slate-300">Open-Source License</label><select required value={appLicenseType} onChange={(e)=>setAppLicenseType(e.target.value)} className={fieldClass}>{LICENSE_OPTIONS.map(([value,label])=><option key={value} value={value}>{label} ({value})</option>)}</select></div>}
                 </div>
                 <div><label className="mb-2 block text-sm font-medium text-slate-300">App Icon URL</label><div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]"><input type="url" required value={appIconUrl} onChange={(e)=>{setAppIconUrl(e.target.value);setIconPreviewError(false);}} className={fieldClass}/><div className="rounded-2xl border border-slate-700 bg-slate-950/60 p-4 text-center"><div className="mx-auto flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl border border-slate-700 bg-slate-900">{appIconUrl.trim()&&!iconPreviewError?<img src={appIconUrl.trim()} alt="App icon preview" className="h-full w-full object-cover" onError={()=>setIconPreviewError(true)}/>:<span className="text-xs text-slate-500">No icon</span>}</div></div></div></div>
                 <div className="rounded-2xl border border-slate-800 bg-slate-950/30 p-5"><h3 className="font-semibold text-white">Author</h3><div className="mt-4 grid gap-4 md:grid-cols-2"><div><label className="mb-2 block text-sm text-slate-300">Author name</label><input value={authorName} onChange={(e)=>setAuthorName(e.target.value)} className={fieldClass}/></div><div><label className="mb-2 block text-sm text-slate-300">Author email</label><input type="email" value={authorEmail} onChange={(e)=>setAuthorEmail(e.target.value)} className={fieldClass}/></div><div className="md:col-span-2"><label className="mb-2 block text-sm text-slate-300">Author website</label><input type="url" value={authorWebsite} onChange={(e)=>setAuthorWebsite(e.target.value)} className={fieldClass}/></div></div></div>
@@ -402,7 +408,7 @@ export default function LumaDeveloperPortal() {
 
               {step === 2 && <div className="space-y-6">
                 <div className="grid gap-5 md:grid-cols-2">
-                  <div className="md:col-span-2"><label className="mb-2 block text-sm font-medium text-slate-300">GitHub Project / Source URL</label><input type="url" required value={appLink} onChange={(e)=>{setAppLink(e.target.value);invalidateFastlane();}} className={fieldClass}/></div>
+                  <div className="md:col-span-2"><label className="mb-2 block text-sm font-medium text-slate-300">{closedSource?"GitHub Metadata Repository URL":"GitHub Project / Source URL"}</label><input type="url" required value={appLink} onChange={(e)=>{setAppLink(e.target.value);invalidateFastlane();}} className={fieldClass}/>{closedSource&&<p className="mt-2 text-xs text-slate-500">This repository is used only for Fastlane metadata. It is not shown as the app's source code.</p>}</div>
                   <div><label className="mb-2 block text-sm text-slate-300">Download URL</label><input type="url" required value={appDownloadUrl} onChange={(e)=>setAppDownloadUrl(e.target.value)} className={fieldClass}/></div>
                   <div><label className="mb-2 block text-sm text-slate-300">Version</label><input required value={appVersion} onChange={(e)=>setAppVersion(e.target.value)} className={fieldClass}/></div>
                   <div><label className="mb-2 block text-sm text-slate-300">Android Package Name</label><input required value={appPackageName} onChange={(e)=>setAppPackageName(e.target.value)} className={fieldClass}/></div>
@@ -415,13 +421,13 @@ export default function LumaDeveloperPortal() {
                 <div className="flex justify-between"><button type="button" onClick={()=>setStep(1)} className="rounded-xl bg-slate-800 px-5 py-2.5 text-white">Back</button><button type="button" onClick={()=>setStep(3)} disabled={!fastlaneMetadata} className="rounded-xl bg-indigo-600 px-5 py-2.5 text-white disabled:opacity-40">Review</button></div>
               </div>}
 
-              {step === 3 && <div className="space-y-6"><div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-5"><dl className="grid gap-4 text-sm md:grid-cols-2"><div><dt className="text-slate-500">Title</dt><dd className="text-white">{fastlaneMetadata?.title}</dd></div><div><dt className="text-slate-500">Category</dt><dd className="text-white">{appCategory}</dd></div><div><dt className="text-slate-500">Version</dt><dd className="text-white">{appVersion}</dd></div><div><dt className="text-slate-500">Package</dt><dd className="break-all text-white">{appPackageName}</dd></div><div><dt className="text-slate-500">Author</dt><dd className="text-white">{authorName||"—"}</dd></div><div><dt className="text-slate-500">Website</dt><dd className="break-all text-white">{websiteUrl||"—"}</dd></div><div><dt className="text-slate-500">Issue tracker</dt><dd className="break-all text-white">{issueTrackerUrl||"—"}</dd></div><div><dt className="text-slate-500">Translation</dt><dd className="break-all text-white">{translationUrl||"—"}</dd></div><div><dt className="text-slate-500">Donations</dt><dd className="text-white">{[donateUrl,liberapay,opencollective,bitcoin,litecoin].filter(Boolean).length} configured</dd></div></dl></div><div className="flex justify-between"><button type="button" onClick={()=>setStep(2)} className="rounded-xl bg-slate-800 px-5 py-2.5 text-white">Back</button><button type="submit" disabled={isSubmitting||!fastlaneMetadata} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-medium text-white disabled:opacity-40">{isSubmitting?"Saving…":isApprovedUpdate?"Submit Update":isRequestedChange?"Resubmit Changes":"Submit App"}</button></div></div>}
+              {step === 3 && <div className="space-y-6"><div className="rounded-2xl border border-slate-800 bg-slate-950/40 p-5"><dl className="grid gap-4 text-sm md:grid-cols-2"><div><dt className="text-slate-500">Title</dt><dd className="text-white">{fastlaneMetadata?.title}</dd></div><div><dt className="text-slate-500">Category</dt><dd className="text-white">{appCategory}</dd></div><div><dt className="text-slate-500">Source model</dt><dd className="text-white">{closedSource?"Closed source":"Open source"}</dd></div><div><dt className="text-slate-500">License</dt><dd className="text-white">{closedSource?"Proprietary":appLicenseType}</dd></div><div><dt className="text-slate-500">Version</dt><dd className="text-white">{appVersion}</dd></div><div><dt className="text-slate-500">Package</dt><dd className="break-all text-white">{appPackageName}</dd></div><div><dt className="text-slate-500">Author</dt><dd className="text-white">{authorName||"—"}</dd></div><div><dt className="text-slate-500">Website</dt><dd className="break-all text-white">{websiteUrl||"—"}</dd></div><div><dt className="text-slate-500">Issue tracker</dt><dd className="break-all text-white">{issueTrackerUrl||"—"}</dd></div><div><dt className="text-slate-500">Translation</dt><dd className="break-all text-white">{translationUrl||"—"}</dd></div><div><dt className="text-slate-500">Donations</dt><dd className="text-white">{[donateUrl,liberapay,opencollective,bitcoin,litecoin].filter(Boolean).length} configured</dd></div></dl></div><div className="flex justify-between"><button type="button" onClick={()=>setStep(2)} className="rounded-xl bg-slate-800 px-5 py-2.5 text-white">Back</button><button type="submit" disabled={isSubmitting||!fastlaneMetadata} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-medium text-white disabled:opacity-40">{isSubmitting?"Saving…":isApprovedUpdate?"Submit Update":isRequestedChange?"Resubmit Changes":"Submit App"}</button></div></div>}
             </form>
           </section>
 
-          <section className={cardClass}><div className="border-b border-slate-800 px-6 py-5"><h2 className="font-semibold text-white">My submissions</h2></div><div className="divide-y divide-slate-800">{loadingApps?<div className="p-6 text-slate-400">Loading…</div>:myApps.length===0?<div className="p-6 text-slate-400">No submissions yet.</div>:myApps.map((app)=><div key={app.id} className="grid gap-4 p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-white">{app.name}</h3><span className={`rounded-full border px-2 py-0.5 text-xs ${getStatusColor(app.status)}`}>{app.status}</span></div><p className="mt-1 line-clamp-2 text-sm text-slate-400">{app.shortDescription||app.description}</p><p className="mt-2 text-xs text-slate-500">{app.category} · {app.version||"No version"}</p></div><div className="flex gap-2"><Link href={`/dashboard/apps/${app.id}`} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white">Details</Link>{(["Rejected","Approved","Changes Requested"] as SubmissionStatus[]).includes(app.status)&&<button type="button" onClick={()=>beginEdit(app)} className="rounded-xl bg-slate-800 px-4 py-2 text-sm text-white">{app.status==="Approved"?"Submit update":app.status==="Changes Requested"?"Fix changes":"Edit & resubmit"}</button>}</div></div>)}</div></section>
+          <section className={cardClass}><div className="border-b border-slate-800 px-6 py-5"><h2 className="font-semibold text-white">My submissions</h2></div><div className="divide-y divide-slate-800">{loadingApps?<div className="p-6 text-slate-400">Loading…</div>:myApps.length===0?<div className="p-6 text-slate-400">No submissions yet.</div>:myApps.map((app)=><div key={app.id} className="grid gap-4 p-6 md:grid-cols-[minmax(0,1fr)_auto] md:items-center"><div><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-white">{app.name}</h3><span className={`rounded-full border px-2 py-0.5 text-xs ${getStatusColor(app.status)}`}>{app.status}</span>{app.closedSource&&<span className="rounded-full border border-fuchsia-700/50 bg-fuchsia-950/30 px-2 py-0.5 text-xs text-fuchsia-300">Closed source</span>}</div><p className="mt-1 line-clamp-2 text-sm text-slate-400">{app.shortDescription||app.description}</p><p className="mt-2 text-xs text-slate-500">{app.category} · {app.version||"No version"}</p></div><div className="flex gap-2"><Link href={`/dashboard/apps/${app.id}`} className="rounded-xl bg-indigo-600 px-4 py-2 text-sm text-white">Details</Link>{(["Rejected","Approved","Changes Requested"] as SubmissionStatus[]).includes(app.status)&&<button type="button" onClick={()=>beginEdit(app)} className="rounded-xl bg-slate-800 px-4 py-2 text-sm text-white">{app.status==="Approved"?"Submit update":app.status==="Changes Requested"?"Fix changes":"Edit & resubmit"}</button>}</div></div>)}</div></section>
         </main>
-        <aside className="space-y-4"><div className={`${cardClass} p-5`}><h3 className="font-semibold text-white">App metadata</h3><p className="mt-2 text-sm leading-6 text-slate-400">Developers provide website, issue tracker, translation, author and donation details. Source code is taken from the GitHub project URL. Anti-Features remain reviewer-managed.</p></div><div className={`${cardClass} p-5`}><h3 className="font-semibold text-white">Fastlane requirements</h3><ul className="mt-4 space-y-2 text-sm text-slate-400"><li>• title.txt</li><li>• short_description.txt</li><li>• full_description.txt</li><li>• changelogs/&lt;versionCode&gt;.txt or default.txt</li><li>• images/phoneScreenshots/*</li></ul></div></aside>
+        <aside className="space-y-4"><div className={`${cardClass} p-5`}><h3 className="font-semibold text-white">App metadata</h3><p className="mt-2 text-sm leading-6 text-slate-400">Developers provide website, issue tracker, translation, author and donation details. Open-source apps publish the GitHub project as source code; closed-source apps keep source fields empty. Anti-Features remain reviewer-managed.</p></div><div className={`${cardClass} p-5`}><h3 className="font-semibold text-white">Fastlane requirements</h3><ul className="mt-4 space-y-2 text-sm text-slate-400"><li>• title.txt</li><li>• short_description.txt</li><li>• full_description.txt</li><li>• changelogs/&lt;versionCode&gt;.txt or default.txt</li><li>• images/phoneScreenshots/*</li></ul></div></aside>
       </div>
     </div>
   );
