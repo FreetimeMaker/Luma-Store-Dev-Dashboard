@@ -10,7 +10,7 @@ interface SubmissionRow {
   description: string;
   link: string | null;
   category: string | null;
-  status: "Pending" | "In Review" | "Approved" | "Rejected";
+  status: "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected";
   submitted_at: string;
   review_message: string | null;
   changelog: string | null;
@@ -30,6 +30,7 @@ interface HistoryRow {
 const statusColors: Record<SubmissionRow["status"], string> = {
   Pending: "border-yellow-700/50 bg-yellow-900/30 text-yellow-300",
   "In Review": "border-blue-700/50 bg-blue-900/30 text-blue-300",
+  "Changes Requested": "border-orange-700/50 bg-orange-900/30 text-orange-300",
   Approved: "border-emerald-700/50 bg-emerald-900/30 text-emerald-300",
   Rejected: "border-red-700/50 bg-red-900/30 text-red-300",
 };
@@ -88,7 +89,7 @@ export default function DeveloperStatusPage() {
         <div className="min-w-0">
           <h1 className="text-2xl font-bold leading-tight text-white sm:text-3xl">Submission status</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
-            Follow review steps, changelogs, reviewer messages and publication decisions for your apps.
+            Follow review steps, changelogs, reviewer messages, security information and publication decisions for your apps.
           </p>
         </div>
         <Link
@@ -122,16 +123,24 @@ export default function DeveloperStatusPage() {
                     )}
                   </div>
 
-                  {submission.link && (
-                    <a
-                      href={submission.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex min-h-11 w-full shrink-0 items-center justify-center whitespace-nowrap rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2.5 text-sm font-medium text-indigo-300 transition hover:border-indigo-500/40 hover:bg-slate-800 sm:w-auto"
+                  <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                    <Link
+                      href={`/dashboard/apps/${submission.id}`}
+                      className="inline-flex min-h-11 w-full shrink-0 items-center justify-center whitespace-nowrap rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 sm:w-auto"
                     >
-                      Open repository
-                    </a>
-                  )}
+                      Open app details
+                    </Link>
+                    {submission.link && (
+                      <a
+                        href={submission.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-11 w-full shrink-0 items-center justify-center whitespace-nowrap rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-2.5 text-sm font-medium text-indigo-300 transition hover:border-indigo-500/40 hover:bg-slate-800 sm:w-auto"
+                      >
+                        Repository
+                      </a>
+                    )}
+                  </div>
                 </div>
 
                 <p className="mt-4 break-words text-sm leading-6 text-slate-400 sm:leading-7">{submission.description}</p>
@@ -139,6 +148,13 @@ export default function DeveloperStatusPage() {
                   Last status update: {formatDate(submission.status_updated_at)}
                 </div>
               </div>
+
+              {submission.status === "Changes Requested" && (
+                <div className="mx-4 mt-4 rounded-xl border border-orange-800/40 bg-orange-950/30 p-4 sm:mx-6 sm:mt-6">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-orange-300 sm:text-xs">Changes requested</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">Open app details to review feedback, reply to comments and prepare your resubmission.</p>
+                </div>
+              )}
 
               {submission.changelog && (
                 <div className="mx-4 mt-4 rounded-xl border border-blue-800/40 bg-blue-950/30 p-4 sm:mx-6 sm:mt-6">
