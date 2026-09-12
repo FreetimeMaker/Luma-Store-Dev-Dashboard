@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useEffect, useMemo } from "react";
+import React, { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { UserResponse } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
@@ -30,6 +30,10 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = safeNext(searchParams.get("next"));
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }: UserResponse) => {
@@ -48,6 +52,29 @@ function LoginContent() {
     if (error) console.error("Login error:", error.message);
   }
 
+  async function signInWithEmail(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setEmailError(null);
+    setEmailLoading(true);
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) {
+        setEmailError(error.message);
+        return;
+      }
+
+      router.replace(next);
+      router.refresh();
+    } finally {
+      setEmailLoading(false);
+    }
+  }
+
   return (
     <main className="flex min-h-[70vh] items-center justify-center p-6">
       <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-xl">
@@ -58,7 +85,62 @@ function LoginContent() {
         <p className="mt-2 text-sm leading-6 text-slate-400">
           You must be signed in before you can open the submission dashboard, submit an app, or view your review timeline.
         </p>
-        <div className="mt-6 flex flex-col gap-3">
+
+        <form onSubmit={signInWithEmail} className="mt-6 space-y-4">
+          <div>
+            <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-300">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@example.com"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-300">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              placeholder="Your password"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+            />
+          </div>
+
+          {emailError && (
+            <p className="rounded-xl border border-red-500/20 bg-red-950/30 px-4 py-3 text-sm text-red-300">
+              {emailError}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={emailLoading}
+            className="w-full rounded-xl bg-indigo-600 px-4 py-3 font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {emailLoading ? "Signing in…" : "Sign in with Email"}
+          </button>
+        </form>
+
+        <div className="my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-slate-800" />
+          <span className="text-xs uppercase tracking-wider text-slate-500">or</span>
+          <div className="h-px flex-1 bg-slate-800" />
+        </div>
+
+        <div className="flex flex-col gap-3">
           <button
             onClick={() => redirectTo("github")}
             className="flex items-center gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"
