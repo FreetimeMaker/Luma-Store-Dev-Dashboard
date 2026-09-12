@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js";
+import type { AuthChangeEvent, Session, User, UserResponse } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AuthNav() {
@@ -13,7 +13,7 @@ export default function AuthNav() {
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data }: UserResponse) => {
       setUser(data.user ?? null);
       setLoading(false);
     });
