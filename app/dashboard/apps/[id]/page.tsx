@@ -1,0 +1,313 @@
+"use client";
+
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import React, { FormEvent, useEffect, useMemo, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+
+type SubmissionStatus = "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected";
+
+type Submission = {
+  id: string;
+  user_id: string;
+  name: string;
+  short_description: string | null;
+  description: string | null;
+  category: string | null;
+  status: SubmissionStatus;
+  submitted_at: string;
+  status_updated_at: string | null;
+  review_message: string | null;
+  repo_url: string | null;
+  link: string | null;
+  license_type: string | null;
+  version: string | null;
+  version_code: number | null;
+  package_name: string | null;
+  changelog: string | null;
+  ant_features: unknown;
+};
+
+type ReviewComment = {
+  id: string;
+  submission_id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+};
+
+type VersionRow = {
+  id: string;
+  version: string | null;
+  version_code: number | null;
+  changelog: string | null;
+  download_url: string | null;
+  status: string;
+  created_at: string;
+  published_at: string | null;
+};
+
+type SecurityScan = {
+  id: string;
+  status: "Not Scanned" | "Queued" | "Scanning" | "Passed" | "Warnings" | "Failed";
+  risk_level: "Unknown" | "Low" | "Medium" | "High" | "Critical";
+  findings: unknown;
+  permissions: unknown;
+  scanned_at: string | null;
+  created_at: string;
+};
+
+type PublishedApp = {
+  id: string;
+  name: string;
+  short_description: string | null;
+  description: string | null;
+  version: string | null;
+  version_code: number | null;
+  package_name: string | null;
+  license_type: string | null;
+  repo_url: string | null;
+  changelog: string | null;
+  ant_features: unknown;
+  updated_at: string | null;
+};
+
+const cardClass = "rounded-2xl border border-slate-800 bg-slate-900/80 shadow-lg shadow-black/10";
+
+const statusColors: Record<SubmissionStatus, string> = {
+  Pending: "border-yellow-700/50 bg-yellow-900/30 text-yellow-300",
+  "In Review": "border-blue-700/50 bg-blue-900/30 text-blue-300",
+  "Changes Requested": "border-orange-700/50 bg-orange-900/30 text-orange-300",
+  Approved: "border-emerald-700/50 bg-emerald-900/30 text-emerald-300",
+  Rejected: "border-red-700/50 bg-red-900/30 text-red-300",
+};
+
+const scanColors: Record<string, string> = {
+  Passed: "border-emerald-700/50 bg-emerald-950/30 text-emerald-300",
+  Warnings: "border-amber-700/50 bg-amber-950/30 text-amber-300",
+  Failed: "border-red-700/50 bg-red-950/30 text-red-300",
+  Scanning: "border-blue-700/50 bg-blue-950/30 text-blue-300",
+  Queued: "border-indigo-700/50 bg-indigo-950/30 text-indigo-300",
+  "Not Scanned": "border-slate-700 bg-slate-950/30 text-slate-300",
+};
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString();
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function objectArray(value: unknown): Array<Record<string, unknown>> {
+  return Array.isArray(value)
+    ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item))
+    : [];
+}
+
+export default function SubmissionDetailsPage() {
+  const params = useParams<{ id: string }>();
+  const submissionId = params.id;
+  const supabase = useMemo(() => createClient(), []);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [submission, setSubmission] = useState<Submission | null>(null);
+  const [comments, setComments] = useState<ReviewComment[]>([]);
+  const [versions, setVersions] = useState<VersionRow[]>([]);
+  const [scan, setScan] = useState<SecurityScan | null>(null);
+  const [publishedApp, setPublishedApp] = useState<PublishedApp | null>(null);
+  const [comment, setComment] = useState("");
+  const [sendingComment, setSendingComment] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  async function load() {
+    setLoading(true);
+    setError(null);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setError("You must be signed in.");
+      setLoading(false);
+      return;
+    }
+    setUserId(user.id);
+
+    const { data: submissionData, error: submissionError } = await supabase
+      .from("luma_submissions")
+      .select("id,user_id,name,short_description,description,category,status,submitted_at,status_updated_at,review_message,repo_url,link,license_type,version,version_code,package_name,changelog,ant_features")
+      .eq("id", submissionId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (submissionError || !submissionData) {
+      setError("Submission not found or you do not have access to it.");
+      setLoading(false);
+      return;
+    }
+
+    const currentSubmission = submissionData as Submission;
+    setSubmission(currentSubmission);
+
+    const [commentsResult, scanResult] = await Promise.all([
+      supabase.from("luma_review_comments").select("id,submission_id,user_id,body,created_at").eq("submission_id", submissionId).order("created_at", { ascending: true }),
+      supabase.from("luma_security_scans").select("id,status,risk_level,findings,permissions,scanned_at,created_at").eq("submission_id", submissionId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+    ]);
+
+    if (!commentsResult.error) setComments((commentsResult.data ?? []) as ReviewComment[]);
+    if (!scanResult.error) setScan((scanResult.data as SecurityScan | null) ?? null);
+
+    if (currentSubmission.package_name) {
+      const versionsResult = await supabase
+        .from("luma_app_versions")
+        .select("id,version,version_code,changelog,download_url,status,created_at,published_at")
+        .eq("package_name", currentSubmission.package_name)
+        .order("created_at", { ascending: false });
+      if (!versionsResult.error) setVersions((versionsResult.data ?? []) as VersionRow[]);
+    }
+
+    if (currentSubmission.status === "Approved") {
+      let publishedResult = await supabase
+        .from("store_apps")
+        .select("id,name,short_description,description,version,version_code,package_name,license_type,repo_url,changelog,ant_features,updated_at")
+        .eq("luma_submission_id", submissionId)
+        .maybeSingle();
+
+      if (!publishedResult.data && currentSubmission.package_name) {
+        publishedResult = await supabase
+          .from("store_apps")
+          .select("id,name,short_description,description,version,version_code,package_name,license_type,repo_url,changelog,ant_features,updated_at")
+          .eq("package_name", currentSubmission.package_name)
+          .maybeSingle();
+      }
+      if (!publishedResult.error) setPublishedApp((publishedResult.data as PublishedApp | null) ?? null);
+    }
+
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submissionId, supabase]);
+
+  async function submitComment(event: FormEvent) {
+    event.preventDefault();
+    const body = comment.trim();
+    if (!body || !userId) return;
+    setSendingComment(true);
+    const { data, error: insertError } = await supabase
+      .from("luma_review_comments")
+      .insert({ submission_id: submissionId, user_id: userId, body })
+      .select("id,submission_id,user_id,body,created_at")
+      .single();
+    if (insertError) {
+      setError(`Comment could not be sent: ${insertError.message}`);
+    } else if (data) {
+      setComments((items) => [...items, data as ReviewComment]);
+      setComment("");
+    }
+    setSendingComment(false);
+  }
+
+  if (loading) return <div className={`${cardClass} mx-auto max-w-6xl p-8 text-center text-slate-400`}>Loading app details…</div>;
+  if (error && !submission) return <div className={`${cardClass} mx-auto max-w-6xl p-8`}><p className="text-red-300">{error}</p><Link href="/dashboard" className="mt-5 inline-flex rounded-xl bg-slate-800 px-4 py-2 text-sm text-white">Back to dashboard</Link></div>;
+  if (!submission) return null;
+
+  const antiFeatures = stringArray((publishedApp?.ant_features ?? submission.ant_features));
+  const permissions = stringArray(scan?.permissions);
+  const findings = objectArray(scan?.findings);
+  const repoUrl = publishedApp?.repo_url || submission.repo_url || submission.link;
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-6 pb-20">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="break-words text-3xl font-bold text-white">{submission.name}</h1>
+            <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusColors[submission.status]}`}>{submission.status}</span>
+          </div>
+          <p className="mt-2 text-sm text-slate-400">{submission.package_name || "No package name"} · {submission.version || "No version"}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(submission.status === "Rejected" || submission.status === "Changes Requested" || submission.status === "Approved") && (
+            <Link href="/dashboard" className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500">
+              {submission.status === "Approved" ? "Submit update" : "Edit & resubmit"}
+            </Link>
+          )}
+          <Link href="/dashboard/status" className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-slate-800">Timeline</Link>
+          <Link href="/dashboard" className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-slate-800">Dashboard</Link>
+        </div>
+      </div>
+
+      {error && <div className="rounded-xl border border-amber-700/50 bg-amber-950/30 p-4 text-sm text-amber-200">{error}</div>}
+
+      {submission.status === "Changes Requested" && (
+        <section className="rounded-2xl border border-orange-700/40 bg-orange-950/20 p-5">
+          <h2 className="font-semibold text-orange-200">Changes requested</h2>
+          <p className="mt-2 text-sm leading-6 text-orange-100/80">A reviewer requested changes. Review the message and comments below, update the submission, then resubmit it for review.</p>
+          {submission.review_message && <p className="mt-3 whitespace-pre-wrap rounded-xl bg-slate-950/40 p-4 text-sm text-slate-300">{submission.review_message}</p>}
+        </section>
+      )}
+
+      {submission.status === "Approved" && (
+        <section className={`${cardClass} overflow-hidden`}>
+          <div className="border-b border-slate-800 px-5 py-4"><h2 className="font-semibold text-white">Published app</h2></div>
+          {publishedApp ? (
+            <div className="grid gap-5 p-5 md:grid-cols-2">
+              <div><p className="text-xs uppercase tracking-wide text-slate-500">Published version</p><p className="mt-1 text-lg font-semibold text-white">{publishedApp.version || "—"} {publishedApp.version_code ? `(code ${publishedApp.version_code})` : ""}</p></div>
+              <div><p className="text-xs uppercase tracking-wide text-slate-500">License</p><p className="mt-1 text-slate-200">{publishedApp.license_type || submission.license_type || "—"}</p></div>
+              <div><p className="text-xs uppercase tracking-wide text-slate-500">Repository</p>{repoUrl ? <a href={repoUrl} target="_blank" rel="noopener noreferrer" className="mt-1 block break-all text-indigo-300 hover:text-indigo-200">{repoUrl}</a> : <p className="mt-1 text-slate-400">—</p>}</div>
+              <div><p className="text-xs uppercase tracking-wide text-slate-500">Last published update</p><p className="mt-1 text-slate-200">{formatDate(publishedApp.updated_at)}</p></div>
+              <div className="md:col-span-2"><p className="text-xs uppercase tracking-wide text-slate-500">Anti-Features</p><div className="mt-2 flex flex-wrap gap-2">{antiFeatures.length ? antiFeatures.map((item) => <span key={item} className="rounded-full border border-amber-700/50 bg-amber-950/30 px-2.5 py-1 text-xs text-amber-200">{item}</span>) : <span className="text-sm text-slate-400">No Anti-Features set by review.</span>}</div></div>
+            </div>
+          ) : <p className="p-5 text-sm text-slate-400">The submission is approved, but no matching published store record was found yet.</p>}
+        </section>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className={`${cardClass} overflow-hidden`}>
+          <div className="border-b border-slate-800 px-5 py-4"><h2 className="font-semibold text-white">Security scan</h2></div>
+          <div className="space-y-5 p-5">
+            <div className="flex flex-wrap gap-2">
+              <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${scanColors[scan?.status || "Not Scanned"]}`}>{scan?.status || "Not Scanned"}</span>
+              <span className="rounded-full border border-slate-700 bg-slate-950/40 px-3 py-1 text-xs text-slate-300">Risk: {scan?.risk_level || "Unknown"}</span>
+            </div>
+            <p className="text-xs text-slate-500">Scanned: {formatDate(scan?.scanned_at)}</p>
+            <div><h3 className="text-sm font-semibold text-slate-200">Findings</h3>{findings.length ? <div className="mt-2 space-y-2">{findings.map((finding, index) => <div key={index} className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-300"><p className="font-medium text-white">{String(finding.title ?? finding.name ?? `Finding ${index + 1}`)}</p>{finding.description ? <p className="mt-1 text-slate-400">{String(finding.description)}</p> : null}</div>)}</div> : <p className="mt-2 text-sm text-slate-500">No findings recorded.</p>}</div>
+            <div><h3 className="text-sm font-semibold text-slate-200">Permissions review</h3><div className="mt-2 flex flex-wrap gap-2">{permissions.length ? permissions.map((permission) => <span key={permission} className="max-w-full break-all rounded-lg border border-slate-700 bg-slate-950/50 px-2.5 py-1 text-xs text-slate-300">{permission}</span>) : <span className="text-sm text-slate-500">No permissions recorded by the scanner.</span>}</div></div>
+          </div>
+        </section>
+
+        <section className={`${cardClass} overflow-hidden`}>
+          <div className="border-b border-slate-800 px-5 py-4"><h2 className="font-semibold text-white">Version history</h2></div>
+          <div className="divide-y divide-slate-800">
+            {versions.length === 0 ? <p className="p-5 text-sm text-slate-500">No version-history entries yet.</p> : versions.map((version) => (
+              <div key={version.id} className="p-5">
+                <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-semibold text-white">{version.version || "Unknown version"} {version.version_code ? <span className="font-normal text-slate-500">({version.version_code})</span> : null}</p><span className="rounded-full border border-slate-700 bg-slate-950/40 px-2.5 py-1 text-xs text-slate-300">{version.status}</span></div>
+                <p className="mt-1 text-xs text-slate-500">{version.published_at ? `Published ${formatDate(version.published_at)}` : `Created ${formatDate(version.created_at)}`}</p>
+                {version.changelog && <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-400">{version.changelog}</p>}
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <section className={`${cardClass} overflow-hidden`}>
+        <div className="border-b border-slate-800 px-5 py-4"><h2 className="font-semibold text-white">Review comments</h2><p className="mt-1 text-xs text-slate-500">Reply to reviewer feedback without losing the conversation history.</p></div>
+        <div className="space-y-3 p-5">
+          {comments.length === 0 ? <p className="rounded-xl border border-dashed border-slate-800 bg-slate-950/30 p-4 text-sm text-slate-500">No review comments yet.</p> : comments.map((item) => (
+            <div key={item.id} className={`rounded-xl border p-4 ${item.user_id === userId ? "border-indigo-800/40 bg-indigo-950/20" : "border-slate-800 bg-slate-950/40"}`}>
+              <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{item.user_id === userId ? "You" : "Reviewer"}</p><p className="text-xs text-slate-600">{formatDate(item.created_at)}</p></div>
+              <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-slate-300">{item.body}</p>
+            </div>
+          ))}
+          <form onSubmit={submitComment} className="pt-2">
+            <label className="mb-2 block text-sm font-medium text-slate-300">Add comment</label>
+            <textarea value={comment} onChange={(event) => setComment(event.target.value)} rows={4} maxLength={4000} placeholder="Reply to the review…" className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20" />
+            <div className="mt-3 flex justify-end"><button type="submit" disabled={sendingComment || !comment.trim()} className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40">{sendingComment ? "Sending…" : "Send comment"}</button></div>
+          </form>
+        </div>
+      </section>
+    </div>
+  );
+}
