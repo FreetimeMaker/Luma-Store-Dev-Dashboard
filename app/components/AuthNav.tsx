@@ -31,25 +31,17 @@ export default function AuthNav() {
   async function handleLogout() {
     await supabase.auth.signOut();
     router.push("/login");
-    router.refresh();
   }
 
   const name =
     user?.user_metadata?.full_name ||
     user?.user_metadata?.name ||
     user?.email ||
-    "Developer";
+    "User";
   const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
-  const initials = String(name)
-    .split(" ")
-    .map((part) => part[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
 
   return (
-    <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 py-2">
+    <nav className="mx-auto flex max-w-4xl items-center justify-between gap-3 py-2">
       <div className="flex min-w-0 items-center gap-3 sm:gap-4">
         <Link href="/" className="truncate text-base font-semibold text-slate-100 sm:text-lg">
           Luma Store Developer Dashboard
@@ -62,12 +54,14 @@ export default function AuthNav() {
 
       <div className="flex items-center gap-4">
         {loading ? (
-          <span className="hidden text-sm text-slate-400 md:inline">Checking login...</span>
+          <div className="hidden items-center gap-2 md:flex">
+            <span className="text-sm text-slate-400">Checking login...</span>
+          </div>
         ) : user ? (
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="hidden items-center gap-4 md:flex">
             <Link
               href="/dashboard"
-              className="hidden text-sm font-medium text-slate-300 transition-colors hover:text-indigo-400 sm:inline"
+              className="text-sm font-medium text-slate-300 transition-colors hover:text-indigo-400"
             >
               Dashboard
             </Link>
@@ -79,15 +73,23 @@ export default function AuthNav() {
                   alt={`${name} profile`}
                   className="h-8 w-8 rounded-full object-cover"
                   onError={(event) => {
-                    (event.currentTarget as HTMLImageElement).style.display = "none";
+                    event.currentTarget.style.display = "none";
                   }}
                 />
               ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 text-sm font-medium text-slate-300">
-                  {initials || "D"}
+                <div
+                  aria-hidden
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 text-sm font-medium text-slate-300"
+                >
+                  {String(name)
+                    .split(" ")
+                    .map((part: string) => part[0])
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase()}
                 </div>
               )}
-              <span className="hidden max-w-40 truncate text-sm text-slate-200 md:inline">{name}</span>
+              <span className="max-w-40 truncate text-sm text-slate-200">{name}</span>
               <button
                 onClick={handleLogout}
                 className="rounded bg-red-600 px-3 py-1 text-sm text-white transition-colors hover:bg-red-700"
@@ -97,12 +99,14 @@ export default function AuthNav() {
             </div>
           </div>
         ) : (
-          <Link
-            href="/login"
-            className="rounded bg-indigo-600 px-3 py-1 text-sm text-white transition-colors hover:bg-indigo-700"
-          >
-            Login
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/login"
+              className="rounded bg-indigo-600 px-3 py-1 text-sm text-white transition-colors hover:bg-indigo-700"
+            >
+              Login
+            </Link>
+          </div>
         )}
       </div>
     </nav>
