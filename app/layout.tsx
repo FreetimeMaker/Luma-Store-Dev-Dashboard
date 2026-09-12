@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full bg-slate-950 text-slate-100">
-        <header className="w-full border-b border-slate-800 bg-slate-900 px-4 py-3 sm:px-6">
+        <header className="sticky top-0 z-50 w-full border-b border-indigo-500/10 bg-slate-950/90 px-4 py-3 backdrop-blur-xl sm:px-6">
           <AuthNav />
         </header>
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">{children}</main>
