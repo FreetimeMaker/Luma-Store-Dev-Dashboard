@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import React, { FormEvent, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import SecurityScanPanel from "./SecurityScanPanel";
 
 type SubmissionStatus = "Pending" | "In Review" | "Changes Requested" | "Approved" | "Rejected";
 
@@ -82,15 +83,6 @@ const statusColors: Record<SubmissionStatus, string> = {
   Rejected: "border-red-700/50 bg-red-900/30 text-red-300",
 };
 
-const scanColors: Record<string, string> = {
-  Passed: "border-emerald-700/50 bg-emerald-950/30 text-emerald-300",
-  Warnings: "border-amber-700/50 bg-amber-950/30 text-amber-300",
-  Failed: "border-red-700/50 bg-red-950/30 text-red-300",
-  Scanning: "border-blue-700/50 bg-blue-950/30 text-blue-300",
-  Queued: "border-indigo-700/50 bg-indigo-950/30 text-indigo-300",
-  "Not Scanned": "border-slate-700 bg-slate-950/30 text-slate-300",
-};
-
 function formatDate(value: string | null | undefined) {
   if (!value) return "—";
   return new Date(value).toLocaleString();
@@ -98,12 +90,6 @@ function formatDate(value: string | null | undefined) {
 
 function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-}
-
-function objectArray(value: unknown): Array<Record<string, unknown>> {
-  return Array.isArray(value)
-    ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object" && !Array.isArray(item))
-    : [];
 }
 
 export default function SubmissionDetailsPage() {
@@ -214,8 +200,6 @@ export default function SubmissionDetailsPage() {
   if (!submission) return null;
 
   const antiFeatures = stringArray((publishedApp?.ant_features ?? submission.ant_features));
-  const permissions = stringArray(scan?.permissions);
-  const findings = objectArray(scan?.findings);
   const repoUrl = publishedApp?.repo_url || submission.repo_url || submission.link;
 
   return (
@@ -265,18 +249,7 @@ export default function SubmissionDetailsPage() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className={`${cardClass} overflow-hidden`}>
-          <div className="border-b border-slate-800 px-5 py-4"><h2 className="font-semibold text-white">Security scan</h2></div>
-          <div className="space-y-5 p-5">
-            <div className="flex flex-wrap gap-2">
-              <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${scanColors[scan?.status || "Not Scanned"]}`}>{scan?.status || "Not Scanned"}</span>
-              <span className="rounded-full border border-slate-700 bg-slate-950/40 px-3 py-1 text-xs text-slate-300">Risk: {scan?.risk_level || "Unknown"}</span>
-            </div>
-            <p className="text-xs text-slate-500">Scanned: {formatDate(scan?.scanned_at)}</p>
-            <div><h3 className="text-sm font-semibold text-slate-200">Findings</h3>{findings.length ? <div className="mt-2 space-y-2">{findings.map((finding, index) => <div key={index} className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 text-sm text-slate-300"><p className="font-medium text-white">{String(finding.title ?? finding.name ?? `Finding ${index + 1}`)}</p>{finding.description ? <p className="mt-1 text-slate-400">{String(finding.description)}</p> : null}</div>)}</div> : <p className="mt-2 text-sm text-slate-500">No findings recorded.</p>}</div>
-            <div><h3 className="text-sm font-semibold text-slate-200">Permissions review</h3><div className="mt-2 flex flex-wrap gap-2">{permissions.length ? permissions.map((permission) => <span key={permission} className="max-w-full break-all rounded-lg border border-slate-700 bg-slate-950/50 px-2.5 py-1 text-xs text-slate-300">{permission}</span>) : <span className="text-sm text-slate-500">No permissions recorded by the scanner.</span>}</div></div>
-          </div>
-        </section>
+        <SecurityScanPanel submissionId={submissionId} initialScan={scan} />
 
         <section className={`${cardClass} overflow-hidden`}>
           <div className="border-b border-slate-800 px-5 py-4"><h2 className="font-semibold text-white">Version history</h2></div>
