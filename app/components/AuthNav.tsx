@@ -31,6 +31,7 @@ export default function AuthNav() {
   async function handleLogout() {
     await supabase.auth.signOut();
     router.push("/login");
+    router.refresh();
   }
 
   const name =
@@ -39,74 +40,75 @@ export default function AuthNav() {
     user?.email ||
     "User";
   const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || null;
+  const initials = String(name)
+    .split(" ")
+    .map((part: string) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
-    <nav className="mx-auto flex max-w-4xl items-center justify-between gap-3 py-2">
-      <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-        <Link href="/" className="truncate text-base font-semibold text-slate-100 sm:text-lg">
-          Luma Store Developer Dashboard
-        </Link>
-        <div className="hidden items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-slate-400 sm:flex">
-          <div className="h-2 w-2 rounded-full bg-emerald-500" />
-          Developer Portal
+    <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+      <Link href="/" className="group flex min-w-0 items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-indigo-400/20 bg-gradient-to-br from-indigo-500/20 to-violet-500/10 text-sm font-bold text-indigo-200 shadow-sm shadow-indigo-950/40">
+          L
         </div>
-      </div>
-
-      <div className="flex items-center gap-4">
-        {loading ? (
-          <div className="hidden items-center gap-2 md:flex">
-            <span className="text-sm text-slate-400">Checking login...</span>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold text-white transition-colors group-hover:text-indigo-200 sm:text-base">
+            Luma Store Dev
           </div>
+          <div className="hidden text-[11px] text-slate-500 sm:block">Developer Dashboard</div>
+        </div>
+      </Link>
+
+      <div className="flex items-center gap-2 sm:gap-3">
+        {!loading && user && (
+          <Link
+            href="/dashboard"
+            className="hidden rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-indigo-500/10 hover:text-indigo-200 sm:inline-flex"
+          >
+            Dashboard
+          </Link>
+        )}
+
+        {loading ? (
+          <span className="hidden text-sm text-slate-500 sm:inline">Checking login...</span>
         ) : user ? (
-          <div className="hidden items-center gap-4 md:flex">
-            <Link
-              href="/dashboard"
-              className="text-sm font-medium text-slate-300 transition-colors hover:text-indigo-400"
-            >
-              Dashboard
-            </Link>
-            <div className="flex items-center gap-3">
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={avatarUrl}
-                  alt={`${name} profile`}
-                  className="h-8 w-8 rounded-full object-cover"
-                  onError={(event) => {
-                    event.currentTarget.style.display = "none";
-                  }}
-                />
-              ) : (
-                <div
-                  aria-hidden
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-700 text-sm font-medium text-slate-300"
-                >
-                  {String(name)
-                    .split(" ")
-                    .map((part: string) => part[0])
-                    .slice(0, 2)
-                    .join("")
-                    .toUpperCase()}
-                </div>
-              )}
-              <span className="max-w-40 truncate text-sm text-slate-200">{name}</span>
-              <button
-                onClick={handleLogout}
-                className="rounded bg-red-600 px-3 py-1 text-sm text-white transition-colors hover:bg-red-700"
+          <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-950/50 p-1.5 pl-2 sm:gap-3">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarUrl}
+                alt={`${name} profile`}
+                className="h-8 w-8 rounded-lg object-cover ring-1 ring-indigo-400/20"
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
+            ) : (
+              <div
+                aria-hidden
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/15 text-xs font-semibold text-indigo-200 ring-1 ring-indigo-400/20"
               >
-                Logout
-              </button>
-            </div>
+                {initials || "U"}
+              </div>
+            )}
+            <span className="hidden max-w-36 truncate text-sm text-slate-200 md:inline">{name}</span>
+            <button
+              onClick={handleLogout}
+              className="rounded-lg px-3 py-1.5 text-sm font-medium text-slate-400 transition hover:bg-rose-500/10 hover:text-rose-300"
+            >
+              Logout
+            </button>
           </div>
         ) : (
-          <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="rounded bg-indigo-600 px-3 py-1 text-sm text-white transition-colors hover:bg-indigo-700"
-            >
-              Login
-            </Link>
-          </div>
+          <Link
+            href="/login"
+            className="rounded-lg border border-indigo-400/20 bg-indigo-500/10 px-3 py-2 text-sm font-medium text-indigo-200 transition hover:border-indigo-400/30 hover:bg-indigo-500/15 hover:text-white"
+          >
+            Sign in
+          </Link>
         )}
       </div>
     </nav>
