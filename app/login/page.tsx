@@ -38,7 +38,7 @@ function LoginContent() {
   }, [next, router, supabase]);
 
   async function redirectTo(provider: "github" | "gitlab") {
-    const callbackUrl = `${window.location.origin}/auth/callback`;
+    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
