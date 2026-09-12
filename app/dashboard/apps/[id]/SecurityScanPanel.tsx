@@ -47,7 +47,6 @@ function objectArray(value: unknown): Array<Record<string, unknown>> {
 export default function SecurityScanPanel({ submissionId, initialScan }: { submissionId: string; initialScan: SecurityScan | null }) {
   const supabase = useMemo(() => createClient(), []);
   const [scan, setScan] = useState<SecurityScan | null>(initialScan);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function reloadLatest() {
@@ -60,59 +59,35 @@ export default function SecurityScanPanel({ submissionId, initialScan }: { submi
       .maybeSingle();
     if (loadError) throw loadError;
     setScan((data as SecurityScan | null) ?? null);
-    return data as SecurityScan | null;
-  }
-
-  async function invokeScan(force = false) {
-    setBusy(true);
-    setError(null);
-    try {
-      const { error: invokeError } = await supabase.functions.invoke("scan-luma-submission", {
-        body: { submission_id: submissionId, force },
-      });
-      if (invokeError) throw invokeError;
-      await reloadLatest();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Security scan failed.");
-    } finally {
-      setBusy(false);
-    }
   }
 
   useEffect(() => {
     setScan(initialScan);
     void reloadLatest().catch((err) => setError(err instanceof Error ? err.message : "Could not load security scan."));
+
+    const timer = window.setInterval(() => {
+      void reloadLatest().catch((err) => setError(err instanceof Error ? err.message : "Could not refresh security scan."));
+    }, 12000);
+
+    return () => window.clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialScan, submissionId]);
 
-  useEffect(() => {
-    if (!scan || !["Queued", "Scanning"].includes(scan.status)) return;
-    const timer = window.setInterval(() => {
-      void invokeScan(false);
-    }, 12000);
-    return () => window.clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scan?.id, scan?.status]);
-
   const findings = objectArray(scan?.findings);
   const permissions = stringArray(scan?.permissions);
-  const hasCompletedScan = Boolean(scan && ["Passed", "Warnings", "Failed"].includes(scan.status));
 
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 shadow-lg shadow-black/10">
-      <div className="flex flex-col gap-3 border-b border-slate-800 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-semibold text-white">Security scan</h2>
-          <p className="mt-1 text-xs text-slate-500">Powered by VirusTotal</p>
+      <div className="border-b border-slate-800 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-white">Security scan</h2>
+            <p className="mt-1 text-xs text-slate-500">VirusTotal scans start automatically after every new submission and update.</p>
+          </div>
+          {(scan?.status === "Queued" || scan?.status === "Scanning") && (
+            <span className="rounded-full border border-blue-700/50 bg-blue-950/30 px-3 py-1 text-xs font-medium text-blue-300">Updating automatically…</span>
+          )}
         </div>
-        <button
-          type="button"
-          disabled={busy || scan?.status === "Queued" || scan?.status === "Scanning"}
-          onClick={() => void invokeScan(hasCompletedScan)}
-          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {busy ? "Contacting VirusTotal…" : hasCompletedScan ? "Rescan with VirusTotal" : "Scan with VirusTotal"}
-        </button>
       </div>
 
       <div className="space-y-5 p-5">
@@ -122,7 +97,7 @@ export default function SecurityScanPanel({ submissionId, initialScan }: { submi
         <div className="flex flex-wrap gap-2">
           <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${scanColors[scan?.status || "Not Scanned"]}`}>{scan?.status || "Not Scanned"}</span>
           <span className="rounded-full border border-slate-700 bg-slate-950/40 px-3 py-1 text-xs text-slate-300">Risk: {scan?.risk_level || "Unknown"}</span>
-          {scan?.provider && <span className="rounded-full border border-slate-700 bg-slate-950/40 px-3 py-1 text-xs text-slate-400">Provider: {scan.provider}</span>}
+          <span className="rounded-full border border-slate-700 bg-slate-950/40 px-3 py-1 text-xs text-slate-400">Provider: VirusTotal</span>
         </div>
 
         <p className="text-xs text-slate-500">Scanned: {formatDate(scan?.scanned_at)}</p>
