@@ -99,16 +99,16 @@ export default function DeveloperStatusPage() {
           const events = history.filter((entry) => entry.submission_id === submission.id);
           return (
             <section key={submission.id} className="min-w-0 overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
-              <div className="flex min-w-0 flex-col gap-3 border-b border-slate-800 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-6">
-                <div className="min-w-0">
+              <div className="min-w-0 border-b border-slate-800 p-4 sm:p-6">
+                <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
                   <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
                     <h2 className="min-w-0 break-words text-lg font-bold text-white sm:text-xl">{submission.name}</h2>
                     <span className={`shrink-0 rounded border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider sm:text-xs ${statusColors[submission.status]}`}>{submission.status}</span>
                   </div>
-                  <p className="mt-2 break-words text-sm leading-relaxed text-slate-400">{submission.description}</p>
-                  <p className="mt-2 text-xs text-slate-500">Last status update: {formatDate(submission.status_updated_at)}</p>
+                  {submission.link && <a href={submission.link} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 whitespace-nowrap rounded-lg border border-slate-700 px-3 py-2 text-sm font-medium text-indigo-400 hover:bg-slate-800 hover:underline">Open repository</a>}
                 </div>
-                {submission.link && <a href={submission.link} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-slate-700 px-3 py-2 text-center text-sm font-medium text-indigo-400 hover:bg-slate-800 hover:underline sm:w-auto sm:border-0 sm:p-0">Open repository</a>}
+                <p className="mt-3 break-words text-sm leading-relaxed text-slate-400">{submission.description}</p>
+                <p className="mt-2 text-xs text-slate-500">Last status update: {formatDate(submission.status_updated_at)}</p>
               </div>
               {submission.changelog && <div className="mx-4 mt-4 rounded-lg border border-blue-800/40 bg-blue-950/30 p-4 sm:mx-6 sm:mt-6"><p className="text-xs font-bold uppercase tracking-wider text-blue-300">Update changelog</p><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-300">{submission.changelog}</p></div>}
               {submission.review_message && <div className="mx-4 mt-4 rounded-lg border border-indigo-800/40 bg-indigo-950/30 p-4 sm:mx-6 sm:mt-6"><p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Latest reviewer message</p><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed text-slate-300">{submission.review_message}</p></div>}
