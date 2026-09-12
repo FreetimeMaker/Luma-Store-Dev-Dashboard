@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { UserResponse } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 
+const PRODUCTION_ORIGIN = "https://luma.free-time.me";
+
 function ProviderIcon({ provider }: { provider: "github" | "gitlab" }) {
   if (provider === "github") {
     return (
@@ -25,6 +27,13 @@ function safeNext(value: string | null) {
   return value?.startsWith("/dashboard") ? value : "/dashboard";
 }
 
+function authOrigin() {
+  if (typeof window === "undefined") return PRODUCTION_ORIGIN;
+  return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? window.location.origin
+    : PRODUCTION_ORIGIN;
+}
+
 function LoginContent() {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
@@ -38,7 +47,7 @@ function LoginContent() {
   }, [next, router, supabase]);
 
   async function redirectTo(provider: "github" | "gitlab") {
-    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+    const callbackUrl = `${authOrigin()}/auth/callback?next=${encodeURIComponent(next)}`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
