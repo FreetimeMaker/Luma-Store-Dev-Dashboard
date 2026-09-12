@@ -15,28 +15,6 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    async function verifyAccess(currentUser: User) {
-      const next = pathname || "/dashboard";
-      const { data, error } = await supabase
-        .from("luma_invite_redemptions")
-        .select("user_id")
-        .eq("user_id", currentUser.id)
-        .maybeSingle();
-
-      if (!mounted) return false;
-
-      if (error || !data) {
-        setUser(null);
-        router.replace(`/invite?next=${encodeURIComponent(next)}`);
-        setLoading(false);
-        return false;
-      }
-
-      setUser(currentUser);
-      setLoading(false);
-      return true;
-    }
-
     async function checkSession() {
       const { data, error } = await supabase.auth.getUser();
       if (!mounted) return;
@@ -44,11 +22,13 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       if (error || !data.user) {
         const next = pathname || "/dashboard";
         router.replace(`/login?next=${encodeURIComponent(next)}`);
+        setUser(null);
         setLoading(false);
         return;
       }
 
-      await verifyAccess(data.user);
+      setUser(data.user);
+      setLoading(false);
     }
 
     void checkSession();
@@ -64,8 +44,8 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      setLoading(true);
-      void verifyAccess(session.user);
+      setUser(session.user);
+      setLoading(false);
     });
 
     return () => {
@@ -79,7 +59,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-[55vh] items-center justify-center">
         <div className="text-center">
           <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-slate-700 border-t-indigo-500" />
-          <p className="mt-4 text-sm text-slate-400">Checking your access…</p>
+          <p className="mt-4 text-sm text-slate-400">Checking your session…</p>
         </div>
       </div>
     );
