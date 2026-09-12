@@ -66,8 +66,7 @@ export default function HomePage() {
             <li>1. Sign in with your developer account</li>
             <li>2. Prepare Fastlane metadata</li>
             <li>3. Submit from the protected dashboard</li>
-            <li>4. Complete developer verification</li>
-            <li>5. Follow the review timeline</li>
+            <li>4. Follow the review timeline</li>
           </ol>
         </div>
       </section>
