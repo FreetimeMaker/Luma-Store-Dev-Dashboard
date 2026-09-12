@@ -22,9 +22,7 @@ function LoginContent() {
   }, [next, router, supabase]);
 
   async function redirectTo(provider: "github" | "gitlab") {
-    const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
-    const origin = configuredSiteUrl || window.location.origin;
-    const callbackUrl = `${origin}/auth/callback?next=${encodeURIComponent(next)}`;
+    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
