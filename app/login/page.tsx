@@ -1,6 +1,6 @@
 "use client";
 
-import React, { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { UserResponse } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
@@ -30,12 +30,6 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = safeNext(searchParams.get("next"));
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [emailLoading, setEmailLoading] = useState(false);
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [emailMessage, setEmailMessage] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }: UserResponse) => {
@@ -54,149 +48,18 @@ function LoginContent() {
     if (error) console.error("Login error:", error.message);
   }
 
-  async function handleEmailAuth(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setEmailError(null);
-    setEmailMessage(null);
-    setEmailLoading(true);
-
-    try {
-      if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
-
-        if (error) {
-          setEmailError(error.message);
-          return;
-        }
-
-        router.replace(next);
-        router.refresh();
-        return;
-      }
-
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-        },
-      });
-
-      if (error) {
-        setEmailError(error.message);
-        return;
-      }
-
-      if (data.session) {
-        router.replace(next);
-        router.refresh();
-      } else {
-        setEmailMessage("Account created. Check your email to confirm your account, then sign in.");
-      }
-    } finally {
-      setEmailLoading(false);
-    }
-  }
-
   return (
     <main className="flex min-h-[70vh] items-center justify-center p-6">
       <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-xl">
         <div className="mb-6 inline-flex rounded-full border border-indigo-500/30 bg-indigo-950/40 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-300">
           Developer access
         </div>
-        <h1 className="text-2xl font-semibold text-white">
-          {mode === "signin" ? "Sign in to Luma Store" : "Create your Luma Store account"}
-        </h1>
+        <h1 className="text-2xl font-semibold text-white">Sign in to Luma Store</h1>
         <p className="mt-2 text-sm leading-6 text-slate-400">
-          {mode === "signin"
-            ? "Sign in to open the submission dashboard, submit an app, or view your review timeline."
-            : "Create an account with your email address and password to access the developer dashboard."}
+          Sign in with GitHub or GitLab to open the submission dashboard, submit an app, or view your review timeline.
         </p>
 
-        <div className="mt-6 grid grid-cols-2 rounded-xl border border-slate-800 bg-slate-950/50 p-1">
-          <button
-            type="button"
-            onClick={() => { setMode("signin"); setEmailError(null); setEmailMessage(null); }}
-            className={`rounded-lg px-3 py-2 text-sm font-medium transition ${mode === "signin" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"}`}
-          >
-            Sign in
-          </button>
-          <button
-            type="button"
-            onClick={() => { setMode("signup"); setEmailError(null); setEmailMessage(null); }}
-            className={`rounded-lg px-3 py-2 text-sm font-medium transition ${mode === "signup" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white"}`}
-          >
-            Create account
-          </button>
-        </div>
-
-        <form onSubmit={handleEmailAuth} className="mt-5 space-y-4">
-          <div>
-            <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-300">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="password" className="mb-2 block text-sm font-medium text-slate-300">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete={mode === "signin" ? "current-password" : "new-password"}
-              required
-              minLength={6}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder={mode === "signin" ? "Your password" : "At least 6 characters"}
-              className="w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white outline-none transition placeholder:text-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
-            />
-          </div>
-
-          {emailError && (
-            <p className="rounded-xl border border-red-500/20 bg-red-950/30 px-4 py-3 text-sm text-red-300">
-              {emailError}
-            </p>
-          )}
-
-          {emailMessage && (
-            <p className="rounded-xl border border-emerald-500/20 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-300">
-              {emailMessage}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={emailLoading}
-            className="w-full rounded-xl bg-indigo-600 px-4 py-3 font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {emailLoading
-              ? mode === "signin" ? "Signing in…" : "Creating account…"
-              : mode === "signin" ? "Sign in with Email" : "Create account with Email"}
-          </button>
-        </form>
-
-        <div className="my-6 flex items-center gap-3">
-          <div className="h-px flex-1 bg-slate-800" />
-          <span className="text-xs uppercase tracking-wider text-slate-500">or</span>
-          <div className="h-px flex-1 bg-slate-800" />
-        </div>
-
-        <div className="flex flex-col gap-3">
+        <div className="mt-6 flex flex-col gap-3">
           <button
             onClick={() => redirectTo("github")}
             className="flex items-center gap-3 rounded-xl border border-slate-700 px-4 py-3 text-left font-medium text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"
