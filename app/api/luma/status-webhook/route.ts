@@ -17,6 +17,7 @@ interface SubmissionRecord {
   changelog?: string | null;
   screenshots?: string[] | null;
   category?: string | null;
+  categories?: string[] | null;
   license_type?: string | null;
   icon_url?: string | null;
   download_url?: string | null;
@@ -52,12 +53,16 @@ function safePathPart(value: string | number | null | undefined, fallback: strin
 
 function metadataText(record: SubmissionRecord) {
   const screenshots = Array.isArray(record.screenshots) ? record.screenshots : [];
+  const categories = Array.isArray(record.categories) && record.categories.length > 0
+    ? record.categories.filter(Boolean)
+    : record.category ? [record.category] : [];
   return [
     `Name: ${record.name}`,
     `Package: ${record.package_name ?? ""}`,
     `Version: ${record.version ?? ""}`,
     `Version Code: ${record.version_code ?? ""}`,
-    `Category: ${record.category ?? ""}`,
+    `Category: ${categories[0] ?? record.category ?? ""}`,
+    `Categories: ${categories.join(" | ")}`,
     `License: ${record.license_type ?? "Proprietary"}`,
     `Closed Source: ${record.closed_source ? "yes" : "no"}`,
     `Icon URL: ${record.icon_url ?? ""}`,
@@ -102,7 +107,10 @@ async function publishClosedSourceMetadata(record: SubmissionRecord) {
     record.changelog,
   ];
   const screenshots = Array.isArray(record.screenshots) ? record.screenshots.filter(Boolean) : [];
-  if (required.some((value) => String(value ?? "").trim().length === 0) || screenshots.length === 0) {
+  const categories = Array.isArray(record.categories) && record.categories.length > 0
+    ? record.categories.filter(Boolean)
+    : record.category ? [record.category] : [];
+  if (required.some((value) => String(value ?? "").trim().length === 0) || screenshots.length === 0 || categories.length === 0) {
     throw new Error("Approved closed-source submission is missing required metadata.");
   }
 
