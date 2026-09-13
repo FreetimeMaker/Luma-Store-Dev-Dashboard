@@ -29,6 +29,10 @@ type AppMetadata = {
   litecoin: string | null;
 };
 
+type StoreCategoryRow = {
+  name: string | null;
+};
+
 const fieldClass = "w-full rounded-xl border border-slate-700 bg-slate-950/70 px-4 py-3 text-white outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20";
 const cardClass = "rounded-2xl border border-slate-800 bg-slate-900/80 shadow-lg shadow-black/10";
 
@@ -102,7 +106,7 @@ export default function AppMetadataPage() {
         : row.category ? [row.category] : [];
 
       setAvailableCategories((categoryData ?? [])
-        .map((item) => String(item.name ?? "").trim())
+        .map((item: StoreCategoryRow) => String(item.name ?? "").trim())
         .filter(Boolean));
       setApp(row);
       setForm({
