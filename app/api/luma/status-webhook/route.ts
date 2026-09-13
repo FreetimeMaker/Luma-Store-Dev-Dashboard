@@ -8,6 +8,29 @@ interface SubmissionRecord {
   name: string;
   status: "Pending" | "In Review" | "Approved" | "Rejected";
   review_message?: string | null;
+  closed_source?: boolean | null;
+  package_name?: string | null;
+  version_code?: number | string | null;
+  version?: string | null;
+  short_description?: string | null;
+  description?: string | null;
+  changelog?: string | null;
+  screenshots?: string[] | null;
+  category?: string | null;
+  license_type?: string | null;
+  icon_url?: string | null;
+  download_url?: string | null;
+  website_url?: string | null;
+  issue_tracker_url?: string | null;
+  translation_url?: string | null;
+  author_name?: string | null;
+  author_email?: string | null;
+  author_website?: string | null;
+  donate_url?: string | null;
+  liberapay?: string | null;
+  opencollective?: string | null;
+  bitcoin?: string | null;
+  litecoin?: string | null;
 }
 
 interface SupabaseWebhookPayload {
@@ -20,6 +43,84 @@ interface SupabaseWebhookPayload {
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unknown error";
+}
+
+function safePathPart(value: string | number | null | undefined, fallback: string) {
+  const normalized = String(value ?? "").trim().replace(/[^A-Za-z0-9._-]+/g, "-");
+  return normalized || fallback;
+}
+
+function metadataText(record: SubmissionRecord) {
+  const screenshots = Array.isArray(record.screenshots) ? record.screenshots : [];
+  return [
+    `Name: ${record.name}`,
+    `Package: ${record.package_name ?? ""}`,
+    `Version: ${record.version ?? ""}`,
+    `Version Code: ${record.version_code ?? ""}`,
+    `Category: ${record.category ?? ""}`,
+    `License: ${record.license_type ?? "Proprietary"}`,
+    `Closed Source: ${record.closed_source ? "yes" : "no"}`,
+    `Icon URL: ${record.icon_url ?? ""}`,
+    `Download URL: ${record.download_url ?? ""}`,
+    `Website: ${record.website_url ?? ""}`,
+    `Issue Tracker: ${record.issue_tracker_url ?? ""}`,
+    `Translation: ${record.translation_url ?? ""}`,
+    `Author Name: ${record.author_name ?? ""}`,
+    `Author Email: ${record.author_email ?? ""}`,
+    `Author Website: ${record.author_website ?? ""}`,
+    `Donate URL: ${record.donate_url ?? ""}`,
+    `Liberapay: ${record.liberapay ?? ""}`,
+    `OpenCollective: ${record.opencollective ?? ""}`,
+    `Bitcoin: ${record.bitcoin ?? ""}`,
+    `Litecoin: ${record.litecoin ?? ""}`,
+    "",
+    "Short Description:",
+    record.short_description ?? "",
+    "",
+    "Description:",
+    record.description ?? "",
+    "",
+    "Changelog:",
+    record.changelog ?? "",
+    "",
+    "Screenshots:",
+    ...screenshots,
+    "",
+  ].join("\n");
+}
+
+async function publishClosedSourceMetadata(record: SubmissionRecord) {
+  if (!record.closed_source || record.status !== "Approved") return null;
+
+  const required = [
+    record.name,
+    record.package_name,
+    record.version,
+    record.version_code,
+    record.short_description,
+    record.description,
+    record.changelog,
+  ];
+  const screenshots = Array.isArray(record.screenshots) ? record.screenshots.filter(Boolean) : [];
+  if (required.some((value) => String(value ?? "").trim().length === 0) || screenshots.length === 0) {
+    throw new Error("Approved closed-source submission is missing required metadata.");
+  }
+
+  const supabase = createAdminClient();
+  const packageName = safePathPart(record.package_name, record.id);
+  const versionCode = safePathPart(record.version_code, "unknown");
+  const path = `${packageName}/${versionCode}/metadata.txt`;
+  const body = new TextEncoder().encode(metadataText(record));
+
+  const { error } = await supabase.storage
+    .from("luma-apps")
+    .upload(path, body, {
+      contentType: "text/plain; charset=utf-8",
+      upsert: true,
+    });
+
+  if (error) throw error;
+  return path;
 }
 
 export async function POST(request: Request) {
@@ -55,6 +156,12 @@ export async function POST(request: Request) {
       }
     }
 
+    let metadataPath: string | null = null;
+    if (current.status === "Approved" && current.closed_source) {
+      stage = "publish-closed-source-metadata";
+      metadataPath = await publishClosedSourceMetadata(current);
+    }
+
     stage = "resolve-developer";
     const supabase = createAdminClient();
     const { data, error } = await supabase.auth.admin.getUserById(current.user_id);
@@ -78,7 +185,7 @@ export async function POST(request: Request) {
       reviewMessage: current.review_message || null,
     });
 
-    return NextResponse.json({ ok: true, notificationSent: true });
+    return NextResponse.json({ ok: true, notificationSent: true, metadataPath });
   } catch (error) {
     const message = errorMessage(error);
     console.error(`Luma status webhook failed at ${stage}:`, error);
