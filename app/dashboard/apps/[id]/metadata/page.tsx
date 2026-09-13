@@ -11,6 +11,8 @@ type AppMetadata = {
   id: string;
   name: string;
   status: SubmissionStatus;
+  category: string | null;
+  categories: string[] | null;
   closed_source: boolean | null;
   author_name: string | null;
   author_email: string | null;
@@ -40,10 +42,12 @@ export default function AppMetadataPage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [app, setApp] = useState<AppMetadata | null>(null);
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
+    categories: [] as string[],
     closed_source: false,
     author_name: "",
     author_email: "",
@@ -70,20 +74,39 @@ export default function AppMetadataPage() {
         setLoading(false);
         return;
       }
-      const { data, error: loadError } = await supabase
-        .from("luma_submissions")
-        .select("id,name,status,closed_source,author_name,author_email,author_website,website_url,source_code_url,issue_tracker_url,translation_url,changelog_url,donate_url,liberapay,opencollective,bitcoin,litecoin")
-        .eq("id", id)
-        .eq("user_id", user.id)
-        .single();
+
+      const [{ data, error: loadError }, { data: categoryData, error: categoryError }] = await Promise.all([
+        supabase
+          .from("luma_submissions")
+          .select("id,name,status,category,categories,closed_source,author_name,author_email,author_website,website_url,source_code_url,issue_tracker_url,translation_url,changelog_url,donate_url,liberapay,opencollective,bitcoin,litecoin")
+          .eq("id", id)
+          .eq("user_id", user.id)
+          .single(),
+        supabase.from("store_categories").select("name").order("name"),
+      ]);
+
       if (loadError || !data) {
         setError("App not found or you do not have access to it.");
         setLoading(false);
         return;
       }
+      if (categoryError) {
+        setError(`Categories could not be loaded: ${categoryError.message}`);
+        setLoading(false);
+        return;
+      }
+
       const row = data as AppMetadata;
+      const selectedCategories = Array.isArray(row.categories) && row.categories.length > 0
+        ? row.categories
+        : row.category ? [row.category] : [];
+
+      setAvailableCategories((categoryData ?? [])
+        .map((item) => String(item.name ?? "").trim())
+        .filter(Boolean));
       setApp(row);
       setForm({
+        categories: selectedCategories,
         closed_source: Boolean(row.closed_source),
         author_name: row.author_name || "",
         author_email: row.author_email || "",
@@ -104,18 +127,33 @@ export default function AppMetadataPage() {
     void load();
   }, [id, supabase]);
 
-  function setField(field: keyof typeof form, value: string | boolean) {
+  function setField(field: Exclude<keyof typeof form, "categories">, value: string | boolean) {
     setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function toggleCategory(category: string) {
+    setForm((current) => ({
+      ...current,
+      categories: current.categories.includes(category)
+        ? current.categories.filter((item) => item !== category)
+        : [...current.categories, category],
+    }));
   }
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
     if (!app) return;
+    if (form.categories.length === 0) {
+      setError("Select at least one category.");
+      return;
+    }
     setSaving(true);
     setError(null);
     const { error: updateError } = await supabase
       .from("luma_submissions")
       .update({
+        category: form.categories[0],
+        categories: form.categories,
         closed_source: form.closed_source,
         author_name: clean(form.author_name),
         author_email: clean(form.author_email),
@@ -167,6 +205,20 @@ export default function AppMetadataPage() {
 
       <form onSubmit={save} className={`${cardClass} space-y-8 p-6 md:p-8`}>
         <section>
+          <h2 className="text-lg font-semibold text-white">Categories</h2>
+          <p className="mt-1 text-sm text-slate-400">Choose every category that fits this app. The first selected category remains the primary category for compatibility.</p>
+          <div className="mt-4 grid max-h-80 gap-2 overflow-y-auto rounded-xl border border-slate-800 bg-slate-950/40 p-4 sm:grid-cols-2 lg:grid-cols-3">
+            {availableCategories.map((category) => (
+              <label key={category} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm text-slate-300 hover:bg-slate-800/60">
+                <input type="checkbox" checked={form.categories.includes(category)} onChange={() => toggleCategory(category)} className="h-4 w-4" />
+                <span>{category}</span>
+              </label>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-slate-500">{form.categories.length} selected{form.categories.length > 0 ? `: ${form.categories.join(", ")}` : ""}</p>
+        </section>
+
+        <section>
           <h2 className="text-lg font-semibold text-white">Source model</h2>
           <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-700 bg-slate-950/40 p-4">
             <input type="checkbox" checked={form.closed_source} onChange={(e) => setField("closed_source", e.target.checked)} className="mt-1 h-4 w-4" />
@@ -205,7 +257,7 @@ export default function AppMetadataPage() {
           </div>
         </section>
 
-        <div className="flex justify-end"><button type="submit" disabled={saving} className="rounded-xl bg-indigo-600 px-5 py-2.5 font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40">{saving ? "Saving…" : "Save app metadata"}</button></div>
+        <div className="flex justify-end"><button type="submit" disabled={saving || form.categories.length === 0} className="rounded-xl bg-indigo-600 px-5 py-2.5 font-medium text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40">{saving ? "Saving…" : "Save app metadata"}</button></div>
       </form>
     </div>
   );
