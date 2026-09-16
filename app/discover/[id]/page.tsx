@@ -50,6 +50,7 @@ type StoreAppPlatform = {
   id: string;
   app_id: string;
   platform: string;
+  linux_package_base: string | null;
   download_url: string | null;
   file_size_mb: number | null;
 };
@@ -127,7 +128,7 @@ export default function DiscoverAppPage() {
           .single(),
         supabase
           .from("store_app_platforms")
-          .select("id,app_id,platform,download_url,file_size_mb")
+          .select("id,app_id,platform,linux_package_base,download_url,file_size_mb")
           .eq("app_id", params.id)
           .order("platform", { ascending: true }),
       ]);
@@ -215,6 +216,7 @@ export default function DiscoverAppPage() {
                   className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-500 px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-indigo-950/30 transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/60"
                 >
                   Download {platform.platform}
+                  {platform.platform.toLowerCase() === "linux" && platform.linux_package_base ? ` · ${platform.linux_package_base}` : ""}
                   {platform.file_size_mb !== null ? ` · ${platform.file_size_mb.toFixed(2)} MB` : ""}
                 </a>
               ))
