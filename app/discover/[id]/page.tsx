@@ -46,6 +46,14 @@ type StoreApp = {
   localized_metadata: JsonValue;
 };
 
+type StoreAppPlatform = {
+  id: string;
+  app_id: string;
+  platform: string;
+  download_url: string | null;
+  file_size_mb: number | null;
+};
+
 function formatDate(value: string | null) {
   if (!value) return "Unknown";
   const date = new Date(value);
@@ -100,6 +108,7 @@ export default function DiscoverAppPage() {
   const params = useParams<{ id: string }>();
   const supabase = useMemo(() => createClient(), []);
   const [app, setApp] = useState<StoreApp | null>(null);
+  const [platforms, setPlatforms] = useState<StoreAppPlatform[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -110,19 +119,28 @@ export default function DiscoverAppPage() {
       setLoading(true);
       setError(null);
 
-      const { data, error: loadError } = await supabase
-        .from("store_apps")
-        .select("*")
-        .eq("id", params.id)
-        .single();
+      const [appResult, platformsResult] = await Promise.all([
+        supabase
+          .from("store_apps")
+          .select("*")
+          .eq("id", params.id)
+          .single(),
+        supabase
+          .from("store_app_platforms")
+          .select("id,app_id,platform,download_url,file_size_mb")
+          .eq("app_id", params.id)
+          .order("platform", { ascending: true }),
+      ]);
 
       if (cancelled) return;
 
-      if (loadError) {
-        setError(loadError.message);
+      if (appResult.error) {
+        setError(appResult.error.message);
         setApp(null);
+        setPlatforms([]);
       } else {
-        setApp(data as StoreApp);
+        setApp(appResult.data as StoreApp);
+        setPlatforms((platformsResult.data ?? []) as StoreAppPlatform[]);
       }
 
       setLoading(false);
@@ -151,38 +169,60 @@ export default function DiscoverAppPage() {
   const screenshots = stringArray(app.screenshots);
   const antiFeatures = stringArray(app.ant_features);
   const name = app.name || app.package_name || "Untitled app";
+  const downloadablePlatforms = platforms.filter((platform) => Boolean(platform.download_url));
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <Link href="/discover" className="inline-flex text-sm font-medium text-indigo-300 transition hover:text-indigo-200">← Back to Discover</Link>
 
       <section className="rounded-3xl border border-indigo-400/15 bg-gradient-to-br from-indigo-500/15 via-slate-900 to-violet-500/10 p-6 sm:p-8">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-          {app.icon_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={app.icon_url} alt={`${name} icon`} className="h-24 w-24 rounded-3xl border border-slate-700 bg-slate-950 object-cover" />
-          ) : (
-            <div className="flex h-24 w-24 items-center justify-center rounded-3xl border border-slate-700 bg-slate-950 text-3xl font-bold text-indigo-200">
-              {name.slice(0, 1).toUpperCase()}
-            </div>
-          )}
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+            {app.icon_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={app.icon_url} alt={`${name} icon`} className="h-24 w-24 rounded-3xl border border-slate-700 bg-slate-950 object-cover" />
+            ) : (
+              <div className="flex h-24 w-24 items-center justify-center rounded-3xl border border-slate-700 bg-slate-950 text-3xl font-bold text-indigo-200">
+                {name.slice(0, 1).toUpperCase()}
+              </div>
+            )}
 
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">{name}</h1>
-              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${app.closed_source ? "bg-amber-500/10 text-amber-200" : "bg-emerald-500/10 text-emerald-200"}`}>
-                {app.closed_source ? "Closed source" : "Open source"}
-              </span>
-            </div>
-            <p className="mt-2 text-sm text-slate-400">{app.developer_name || app.author_name || "Unknown developer"}</p>
-            {app.short_description && <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{app.short_description}</p>}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">{name}</h1>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${app.closed_source ? "bg-amber-500/10 text-amber-200" : "bg-emerald-500/10 text-emerald-200"}`}>
+                  {app.closed_source ? "Closed source" : "Open source"}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-slate-400">{app.developer_name || app.author_name || "Unknown developer"}</p>
+              {app.short_description && <p className="mt-4 max-w-3xl text-base leading-7 text-slate-300">{app.short_description}</p>}
 
-            <div className="mt-5 flex flex-wrap gap-2">
-              {app.categories?.map((category) => (
-                <span key={category} className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">{category}</span>
-              ))}
-              {app.subcategory && <span className="rounded-full border border-slate-700 px-2.5 py-1 text-xs text-slate-300">{app.subcategory}</span>}
+              <div className="mt-5 flex flex-wrap gap-2">
+                {app.categories?.map((category) => (
+                  <span key={category} className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-200">{category}</span>
+                ))}
+                {app.subcategory && <span className="rounded-full border border-slate-700 px-2.5 py-1 text-xs text-slate-300">{app.subcategory}</span>}
+              </div>
             </div>
+          </div>
+
+          <div className="flex w-full shrink-0 flex-col gap-2 lg:w-auto lg:min-w-56">
+            {downloadablePlatforms.length > 0 ? (
+              downloadablePlatforms.map((platform) => (
+                <a
+                  key={platform.id}
+                  href={platform.download_url!}
+                  className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-indigo-500 px-5 py-3 text-center text-sm font-bold text-white shadow-lg shadow-indigo-950/30 transition hover:bg-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-300/60"
+                >
+                  Download {platform.platform}
+                  {platform.file_size_mb !== null ? ` · ${platform.file_size_mb.toFixed(2)} MB` : ""}
+                </a>
+              ))
+            ) : (
+              <div className="rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-center text-sm text-slate-500">
+                No download available
+              </div>
+            )}
           </div>
         </div>
       </section>
