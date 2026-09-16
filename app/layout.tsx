@@ -4,8 +4,8 @@ import AuthNav from "./components/AuthNav";
 
 export const metadata: Metadata = {
   title: {
-    default: "Luma Store Developer Dashboard",
-    template: "%s | Luma Store Dev Dashboard",
+    default: "Luma Store",
+    template: "%s | Luma Store",
   },
   description: "Submit and manage open-source Android apps for the Luma Store.",
   manifest: "/site.webmanifest",
