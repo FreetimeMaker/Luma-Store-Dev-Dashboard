@@ -62,7 +62,14 @@ export default function AuthNav() {
         </div>
       </Link>
 
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-1 sm:gap-3">
+        <Link
+          href="/discover"
+          className="rounded-lg px-2.5 py-2 text-sm font-medium text-slate-300 transition hover:bg-indigo-500/10 hover:text-indigo-200 sm:px-3"
+        >
+          Discover
+        </Link>
+
         {!loading && user && (
           <Link
             href="/dashboard"
