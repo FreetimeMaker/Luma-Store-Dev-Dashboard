@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 import AuthNav from "./components/AuthNav";
 
@@ -7,7 +8,7 @@ export const metadata: Metadata = {
     default: "Luma Store",
     template: "%s | Luma Store",
   },
-  description: "Submit and manage open-source Android apps for the Luma Store.",
+  description: "Discover Android apps and manage app submissions with Luma Store.",
   manifest: "/site.webmanifest",
   icons: {
     icon: [
@@ -29,8 +30,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AuthNav />
         </header>
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">{children}</main>
-        <footer className="border-t border-slate-800 px-4 py-6 text-center text-xs text-slate-500 sm:px-6">
-          © 2026 Freetime Maker · Luma Store Developer Dashboard
+        <footer className="border-t border-slate-800/80 px-4 py-8 sm:px-6">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 text-center text-xs text-slate-500 sm:flex-row sm:text-left">
+            <p>© 2026 Freetime Maker · Luma Store</p>
+            <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2" aria-label="Footer navigation">
+              <Link href="/" className="transition hover:text-slate-300">Home</Link>
+              <Link href="/discover" className="transition hover:text-slate-300">Discover</Link>
+              <Link href="/login?next=/dashboard" className="transition hover:text-slate-300">Developers</Link>
+            </nav>
+          </div>
         </footer>
       </body>
     </html>
