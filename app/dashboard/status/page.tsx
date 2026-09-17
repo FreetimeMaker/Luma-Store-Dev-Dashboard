@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 interface SubmissionRow {
@@ -42,6 +43,8 @@ function formatDate(value: string | null) {
 
 export default function DeveloperStatusPage() {
   const supabase = useMemo(() => createClient(), []);
+  const searchParams = useSearchParams();
+  const selectedSubmissionId = searchParams.get("submission")?.trim() || null;
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
   const [history, setHistory] = useState<HistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,58 +54,84 @@ export default function DeveloperStatusPage() {
     async function load() {
       setLoading(true);
       setError(null);
+      setHistory([]);
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setError("You must be signed in.");
+        setSubmissions([]);
         setLoading(false);
         return;
       }
-      const { data: submissionData, error: submissionError } = await supabase
+
+      let submissionQuery = supabase
         .from("luma_submissions")
         .select("id,name,description,link,category,status,submitted_at,review_message,changelog,status_updated_at,approved_at,rejected_at")
-        .eq("user_id", user.id)
-        .order("submitted_at", { ascending: false });
+        .eq("user_id", user.id);
+
+      if (selectedSubmissionId) {
+        submissionQuery = submissionQuery.eq("id", selectedSubmissionId);
+      }
+
+      const { data: submissionData, error: submissionError } = await submissionQuery.order("submitted_at", { ascending: false });
+
       if (submissionError) {
-        setError("Could not load your app submissions.");
+        setError("Could not load your app submission.");
+        setSubmissions([]);
         setLoading(false);
         return;
       }
+
       const rows = (submissionData ?? []) as SubmissionRow[];
       setSubmissions(rows);
+
       if (rows.length > 0) {
         const { data: historyData, error: historyError } = await supabase
           .from("luma_submission_status_history")
           .select("id,submission_id,status,review_message,created_at")
           .in("submission_id", rows.map((row) => row.id))
           .order("created_at", { ascending: true });
-        if (historyError) setError("Submissions loaded, but the status timeline could not be loaded.");
+
+        if (historyError) setError("Submission loaded, but the status timeline could not be loaded.");
         else setHistory((historyData ?? []) as HistoryRow[]);
       }
+
       setLoading(false);
     }
-    load();
-  }, [supabase]);
+
+    void load();
+  }, [selectedSubmissionId, supabase]);
+
+  const selectedSubmission = selectedSubmissionId ? submissions[0] ?? null : null;
 
   return (
     <div className="mx-auto min-w-0 max-w-6xl space-y-5 pb-16 sm:space-y-6 sm:pb-20">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold leading-tight text-white sm:text-3xl">Submission status</h1>
+          <h1 className="text-2xl font-bold leading-tight text-white sm:text-3xl">
+            {selectedSubmissionId ? (selectedSubmission ? `${selectedSubmission.name} timeline` : "App timeline") : "Submission status"}
+          </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400 sm:text-base sm:leading-7">
-            Follow review steps, changelogs, reviewer messages, security information and publication decisions for your apps.
+            {selectedSubmissionId
+              ? "Follow the review history and reviewer messages for this app only."
+              : "Follow review steps, changelogs, reviewer messages, security information and publication decisions for your apps."}
           </p>
         </div>
         <Link
-          href="/dashboard"
+          href={selectedSubmissionId ? `/dashboard/apps/${selectedSubmissionId}` : "/dashboard"}
           className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-center text-sm font-medium text-slate-200 transition hover:bg-slate-800 sm:w-auto"
         >
-          Back to Developer Dashboard
+          {selectedSubmissionId ? "Back to app details" : "Back to Developer Dashboard"}
         </Link>
       </div>
 
       {loading && <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center text-sm text-slate-400 sm:p-10 sm:text-base">Loading submission history…</div>}
       {error && <div className="rounded-2xl border border-amber-800/50 bg-amber-950/30 px-4 py-4 text-sm leading-6 text-amber-200 sm:px-5">{error}</div>}
-      {!loading && submissions.length === 0 && <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center text-sm text-slate-400 sm:p-10 sm:text-base">You have not submitted an app yet.</div>}
+      {!loading && submissions.length === 0 && (
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 text-center text-sm text-slate-400 sm:p-10 sm:text-base">
+          {selectedSubmissionId ? "This app submission was not found or you do not have access to it." : "You have not submitted an app yet."}
+        </div>
+      )}
 
       <div className="space-y-5">
         {submissions.map((submission) => {
