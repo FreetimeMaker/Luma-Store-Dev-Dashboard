@@ -218,7 +218,7 @@ export default function SubmissionDetailsPage() {
               {submission.status === "Approved" ? "Submit update" : "Edit & resubmit"}
             </Link>
           )}
-          <Link href="/dashboard/status" className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-slate-800">Timeline</Link>
+          <Link href={`/dashboard/status?submission=${encodeURIComponent(submissionId)}`} className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-slate-800">View timeline</Link>
           <Link href="/dashboard" className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-medium text-slate-200 transition hover:bg-slate-800">Dashboard</Link>
         </div>
       </div>
