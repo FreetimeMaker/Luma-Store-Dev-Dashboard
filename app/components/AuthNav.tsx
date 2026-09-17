@@ -58,7 +58,7 @@ export default function AuthNav() {
           <div className="truncate text-sm font-semibold text-white transition-colors group-hover:text-indigo-200 sm:text-base">
             Luma Store
           </div>
-          <div className="hidden text-[11px] text-slate-500 sm:block">Developer Dashboard</div>
+          <div className="hidden text-[11px] text-slate-500 sm:block">Apps & developer tools</div>
         </div>
       </Link>
 
