@@ -82,7 +82,31 @@ export default function DeveloperStatusPage() {
         return;
       }
 
-      const rows = (submissionData ?? []) as SubmissionRow[];
+      let rows = (submissionData ?? []) as SubmissionRow[];
+
+      if (!selectedSubmissionId) {
+        const { data: storeApps, error: storeAppsError } = await supabase
+          .from("store_apps")
+          .select("luma_submission_id");
+
+        if (storeAppsError) {
+          setError("Could not resolve the current store submissions.");
+          setSubmissions([]);
+          setLoading(false);
+          return;
+        }
+
+        const canonicalSubmissionIds = new Set(
+          (storeApps ?? [])
+            .map((item) => item.luma_submission_id)
+            .filter((id): id is string => typeof id === "string" && id.length > 0)
+        );
+
+        rows = rows.filter(
+          (item) => item.status !== "Approved" || canonicalSubmissionIds.has(item.id)
+        );
+      }
+
       setSubmissions(rows);
 
       if (rows.length > 0) {
