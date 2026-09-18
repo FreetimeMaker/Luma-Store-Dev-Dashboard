@@ -316,16 +316,29 @@ export default function LumaDeveloperPortal() {
         supabase.from("store_apps").select("luma_submission_id").not("luma_submission_id", "is", null),
       ]);
 
-      if (!error && !storeAppsError && data) {
+      if (!error && data) {
         const canonicalSubmissionIds = new Set(
           (storeApps ?? [])
             .map((item) => item.luma_submission_id)
             .filter((id): id is string => typeof id === "string" && id.length > 0)
         );
 
-        const visibleSubmissions = (data as LumaSubmissionRow[]).filter(
-          (item) => item.status !== "Approved" || canonicalSubmissionIds.has(item.id)
-        );
+        const rows = data as LumaSubmissionRow[];
+        const canonicalRows = !storeAppsError
+          ? rows.filter((item) => item.status !== "Approved" || canonicalSubmissionIds.has(item.id))
+          : rows;
+
+        const seenApprovedApps = new Set<string>();
+        const visibleSubmissions = canonicalRows.filter((item) => {
+          if (item.status !== "Approved") return true;
+
+          const appKey = item.package_name?.trim().toLowerCase()
+            || `${item.name.trim().toLowerCase()}|${(item.platform ?? "").trim().toLowerCase()}`;
+
+          if (seenApprovedApps.has(appKey)) return false;
+          seenApprovedApps.add(appKey);
+          return true;
+        });
 
         setMyApps(visibleSubmissions.map(rowToApp));
       }
