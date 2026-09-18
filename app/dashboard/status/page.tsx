@@ -105,7 +105,7 @@ export default function DeveloperStatusPage() {
   const selectedSubmission = selectedSubmissionId ? submissions[0] ?? null : null;
 
   return (
-    <div className="mx-auto min-w-0 max-w-6xl space-y-5 pb-16 sm:space-y-6 sm:pb-20">
+    <div className="glass-page mx-auto min-w-0 max-w-6xl space-y-5 pb-16 sm:space-y-6 sm:pb-20">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold leading-tight text-white sm:text-3xl">
