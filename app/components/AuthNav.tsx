@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { AuthChangeEvent, Session, User, UserResponse } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
@@ -51,9 +52,14 @@ export default function AuthNav() {
   return (
     <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3">
       <Link href="/" className="group flex min-w-0 items-center gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-indigo-400/20 bg-gradient-to-br from-indigo-500/20 to-violet-500/10 text-sm font-bold text-indigo-200 shadow-sm shadow-indigo-950/40">
-          L
-        </div>
+        <Image
+          src="/android-chrome-192x192.png"
+          alt="Luma Store"
+          width={36}
+          height={36}
+          priority
+          className="h-9 w-9 shrink-0 rounded-xl object-cover shadow-sm shadow-indigo-950/40 ring-1 ring-white/10"
+        />
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold text-white transition-colors group-hover:text-indigo-200 sm:text-base">
             Luma Store
