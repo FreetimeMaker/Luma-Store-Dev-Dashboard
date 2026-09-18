@@ -53,7 +53,7 @@ function FeatureIcon({ type }: { type: string }) {
 
 export default function HomePage() {
   return (
-    <div className="mx-auto max-w-6xl pb-16 pt-4 sm:pb-24 sm:pt-8">
+    <div className="glass-page mx-auto max-w-6xl pb-16 pt-4 sm:pb-24 sm:pt-8">
       <section className="relative isolate overflow-hidden rounded-[2rem] border border-indigo-400/15 bg-slate-900/70 shadow-2xl shadow-black/25">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_0%,rgba(99,102,241,0.28),transparent_36%),radial-gradient(circle_at_92%_16%,rgba(168,85,247,0.20),transparent_30%),linear-gradient(to_bottom_right,rgba(15,23,42,0.15),rgba(2,6,23,0.7))]" />
         <div className="pointer-events-none absolute -right-24 -top-24 -z-10 h-72 w-72 rounded-full border border-indigo-400/10" />
