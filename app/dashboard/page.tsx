@@ -311,8 +311,24 @@ export default function LumaDeveloperPortal() {
     async function fetchApps() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoadingApps(false); return; }
-      const { data, error } = await supabase.from("luma_submissions").select("*").eq("user_id", user.id).order("submitted_at", { ascending: false });
-      if (!error && data) setMyApps((data as LumaSubmissionRow[]).map(rowToApp));
+      const [{ data, error }, { data: storeApps, error: storeAppsError }] = await Promise.all([
+        supabase.from("luma_submissions").select("*").eq("user_id", user.id).order("submitted_at", { ascending: false }),
+        supabase.from("store_apps").select("luma_submission_id").not("luma_submission_id", "is", null),
+      ]);
+
+      if (!error && !storeAppsError && data) {
+        const canonicalSubmissionIds = new Set(
+          (storeApps ?? [])
+            .map((item) => item.luma_submission_id)
+            .filter((id): id is string => typeof id === "string" && id.length > 0)
+        );
+
+        const visibleSubmissions = (data as LumaSubmissionRow[]).filter(
+          (item) => item.status !== "Approved" || canonicalSubmissionIds.has(item.id)
+        );
+
+        setMyApps(visibleSubmissions.map(rowToApp));
+      }
       setLoadingApps(false);
     }
     void fetchApps();
