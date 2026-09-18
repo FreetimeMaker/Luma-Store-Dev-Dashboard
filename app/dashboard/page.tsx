@@ -463,7 +463,7 @@ export default function LumaDeveloperPortal() {
   };
 
   if (submitted) return (
-    <div className="mx-auto max-w-3xl py-16 text-center"><div className={`${cardClass} p-10`}>
+    <div className="glass-page mx-auto max-w-3xl py-16 text-center"><div className={`${cardClass} p-10`}>
       <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-950/40 text-2xl text-emerald-300">✓</div>
       <h1 className="text-3xl font-bold text-white">{isApprovedUpdate ? "Update submitted" : isRequestedChange ? "Changes resubmitted" : "Submission received"}</h1>
       <p className="mt-3 text-slate-400">App metadata for <strong className="text-white">{appName}</strong> were saved.</p>
@@ -472,7 +472,7 @@ export default function LumaDeveloperPortal() {
   );
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 pb-20">
+    <div className="glass-page mx-auto max-w-6xl space-y-8 pb-20">
       <header className="border-b border-slate-800 pb-7">
         <h1 className="text-3xl font-bold text-white"><span className="bg-gradient-to-r from-pink-500 to-indigo-500 bg-clip-text text-transparent">Luma Store</span> Developer Portal</h1>
         <p className="mt-2 max-w-2xl text-slate-400">Submit and maintain Android, Windows and Linux apps.</p>
