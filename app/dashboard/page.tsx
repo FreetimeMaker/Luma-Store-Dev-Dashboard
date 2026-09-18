@@ -319,8 +319,8 @@ export default function LumaDeveloperPortal() {
       if (!error && data) {
         const canonicalSubmissionIds = new Set(
           (storeApps ?? [])
-            .map((item) => item.luma_submission_id)
-            .filter((id): id is string => typeof id === "string" && id.length > 0)
+            .map((item: { luma_submission_id: string | null }) => item.luma_submission_id)
+            .filter((id: string | null): id is string => typeof id === "string" && id.length > 0)
         );
 
         const rows = data as LumaSubmissionRow[];
