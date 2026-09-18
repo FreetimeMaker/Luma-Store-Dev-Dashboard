@@ -191,7 +191,7 @@ export default function AppMetadataPage() {
   if (!app) return <div className={`${cardClass} mx-auto max-w-5xl p-8 text-red-300`}>{error || "App not found."}</div>;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pb-20">
+    <div className="glass-page mx-auto max-w-5xl space-y-6 pb-20">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">App metadata</h1>
