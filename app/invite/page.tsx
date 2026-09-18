@@ -91,7 +91,7 @@ function InviteContent() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center">
+      <div className="glass-page flex min-h-[70vh] items-center justify-center">
         <div className="text-center">
           <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-slate-700 border-t-indigo-500" />
           <p className="mt-4 text-sm text-slate-400">Checking invite access…</p>
@@ -101,7 +101,7 @@ function InviteContent() {
   }
 
   return (
-    <main className="flex min-h-[70vh] items-center justify-center px-4 py-8 sm:p-6">
+    <main className="glass-page flex min-h-[70vh] items-center justify-center px-4 py-8 sm:p-6">
       <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-xl sm:p-8">
         <div className="mb-5 inline-flex rounded-full border border-indigo-500/30 bg-indigo-950/40 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-300">
           Invite required
@@ -161,7 +161,7 @@ function InviteContent() {
 
 export default function InvitePage() {
   return (
-    <Suspense fallback={<div className="flex min-h-[70vh] items-center justify-center text-slate-400">Loading…</div>}>
+    <Suspense fallback={<div className="glass-page flex min-h-[70vh] items-center justify-center text-slate-400">Loading…</div>}>
       <InviteContent />
     </Suspense>
   );
