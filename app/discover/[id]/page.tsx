@@ -154,12 +154,12 @@ export default function DiscoverAppPage() {
   }, [params.id, supabase]);
 
   if (loading) {
-    return <div className="mx-auto h-96 max-w-6xl animate-pulse rounded-3xl border border-slate-800 bg-slate-900/60" />;
+    return <div className="glass-page mx-auto h-96 max-w-6xl animate-pulse rounded-3xl border border-slate-800 bg-slate-900/60" />;
   }
 
   if (error || !app) {
     return (
-      <div className="mx-auto max-w-3xl rounded-2xl border border-rose-500/25 bg-rose-950/20 p-6">
+      <div className="glass-page mx-auto max-w-3xl rounded-2xl border border-rose-500/25 bg-rose-950/20 p-6">
         <h1 className="text-xl font-semibold text-rose-200">App not found</h1>
         <p className="mt-2 text-sm text-rose-100/70">{error || "This app could not be loaded."}</p>
         <Link href="/discover" className="mt-4 inline-flex text-sm font-medium text-indigo-300 hover:text-indigo-200">← Back to Discover</Link>
@@ -173,7 +173,7 @@ export default function DiscoverAppPage() {
   const downloadablePlatforms = platforms.filter((platform) => Boolean(platform.download_url));
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="glass-page mx-auto max-w-6xl space-y-6">
       <Link href="/discover" className="inline-flex text-sm font-medium text-indigo-300 transition hover:text-indigo-200">← Back to Discover</Link>
 
       <section className="rounded-3xl border border-indigo-400/15 bg-gradient-to-br from-indigo-500/15 via-slate-900 to-violet-500/10 p-6 sm:p-8">
