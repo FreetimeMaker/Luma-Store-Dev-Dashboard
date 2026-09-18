@@ -203,7 +203,7 @@ export default function SubmissionDetailsPage() {
   const repoUrl = publishedApp?.repo_url || submission.repo_url || submission.link;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 pb-20">
+    <div className="glass-page mx-auto max-w-6xl space-y-6 pb-20">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
