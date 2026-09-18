@@ -119,7 +119,7 @@ export default function DiscoverPage() {
   }, [apps, category, license, search, sourceType]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
+    <div className="glass-page mx-auto max-w-6xl space-y-8">
       <section className="rounded-3xl border border-indigo-400/15 bg-gradient-to-br from-indigo-500/15 via-slate-900 to-violet-500/10 p-6 shadow-2xl shadow-indigo-950/20 sm:p-8 lg:p-10">
         <div className="max-w-3xl">
           <div className="mb-4 inline-flex items-center rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">
