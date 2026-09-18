@@ -42,7 +42,7 @@ function AuthCallbackContent() {
   }, [router, searchParams, supabase]);
 
   return (
-    <div className="flex min-h-[70vh] items-center justify-center text-slate-300">
+    <div className="glass-page flex min-h-[70vh] items-center justify-center text-slate-300">
       Authentication is being processed...
     </div>
   );
@@ -50,7 +50,7 @@ function AuthCallbackContent() {
 
 export default function AuthCallbackPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-[70vh] items-center justify-center text-slate-300">Loading...</div>}>
+    <Suspense fallback={<div className="glass-page flex min-h-[70vh] items-center justify-center text-slate-300">Loading...</div>}>
       <AuthCallbackContent />
     </Suspense>
   );
