@@ -256,3 +256,69 @@ p, a, code, pre, span { overflow-wrap: anywhere; }
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* Explicit per-page Liquid Glass layer. Every visible route opts into glass-page. */
+.glass-page {
+  position: relative;
+  isolation: isolate;
+}
+
+.glass-page::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 1rem;
+  left: 50%;
+  width: min(78vw, 58rem);
+  height: 20rem;
+  transform: translateX(-50%);
+  pointer-events: none;
+  border-radius: 9999px;
+  background:
+    radial-gradient(circle at 35% 45%, rgba(129, 140, 248, 0.16), transparent 45%),
+    radial-gradient(circle at 70% 50%, rgba(192, 132, 252, 0.12), transparent 42%);
+  filter: blur(42px);
+  opacity: 0.9;
+}
+
+.glass-page [class*="bg-slate-900"],
+.glass-page [class*="bg-slate-950"] {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.012)),
+    rgba(6, 14, 29, 0.46) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(155%);
+  backdrop-filter: blur(20px) saturate(155%);
+}
+
+.glass-page > [class*="border-b"],
+.glass-page > [class*="border-t"] {
+  border-color: rgba(255, 255, 255, 0.11) !important;
+}
+
+.glass-page :is(nav, aside)[class*="border"],
+.glass-page :is(div, section)[class*="shadow-xl"],
+.glass-page :is(div, section)[class*="shadow-2xl"] {
+  -webkit-backdrop-filter: blur(24px) saturate(165%);
+  backdrop-filter: blur(24px) saturate(165%);
+}
+
+.glass-page :is(code, pre) {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(2, 6, 23, 0.42);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+
+.glass-page hr {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 767px) {
+  .glass-page::before {
+    top: 0;
+    width: 92vw;
+    height: 15rem;
+    filter: blur(34px);
+  }
+}
