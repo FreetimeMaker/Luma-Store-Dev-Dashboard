@@ -5,7 +5,7 @@ import AuthGate from "./AuthGate";
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <AuthGate>
-      <div className="min-w-0 space-y-4 sm:space-y-6">
+      <div className="glass-page min-w-0 space-y-4 sm:space-y-6">
         <div className="mx-auto max-w-6xl min-w-0 space-y-3 px-0 sm:px-1">
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Link
